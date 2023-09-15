@@ -7,7 +7,7 @@
 # warranty of any kind, whether express or implied.
 
 STATE_PATH="$1"
-[[ -z "$1" ]] && STATE_PATH="/etc/armbian-leds.conf"
+[ -z "$1" ] && STATE_PATH="/etc/armbian-leds.conf"
 
 REGEX_BLANK_LINE=$'^\s*$'
 REGEX_COMMENT_LINE=$'^#.*$'
@@ -16,7 +16,7 @@ REGEX_PARSE=$'(.*)=(.*)'
 
 LED=""
 
-if [[ ! -f $STATE_PATH ]]; then
+if [ ! -f $STATE_PATH ]; then
 	echo "File $STATE_PATH not found, nothing to do"
 	exit 0
 fi
@@ -24,15 +24,15 @@ fi
 while read LINE; do
 	
 	# Blank lines and lines starting with "#" are ignored
-	[[ "$LINE" =~ $REGEX_BLANK_LINE ]] && continue
-	[[ "$LINE" =~ $REGEX_COMMENT_LINE ]] && continue
-
-	# When line matches the [...] style, assign the content as led base path
-	if [[ "$LINE" =~ $REGEX_EXTRACT ]]; then 
-		LED=${BASH_REMATCH[1]}
-		continue
-	fi
-
+	[ "$LINE" =~ $REGEX_BLANK_LINE ] && continue
+	[ "$LINE" =~ $REGEX_COMMENT_LINE ] && continue
+	[ "$LINE" =~ $REGEX_EXTRACT ]; then 
+	[ -z "$LED" ]; then
+	[ "$LINE" =~ $REGEX_PARSE ]
+	[ -z $PARAM || -z $VALUE ]; then
+	[ $PARAM = "brightness" -a $VALUE -eq 0 ] && continue
+	[ ! -w "$LED/$PARAM" ]; then
+	[ "$PARAM" = "trigger" -a "$VALUE" = "none" ] && echo "default-on" > "$LED/$PARAM"
 	if [[ -z "$LED" ]]; then
 		echo "Invalid state file, no led path stanza found"
 		exit 1
