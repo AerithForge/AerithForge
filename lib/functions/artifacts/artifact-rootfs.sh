@@ -143,26 +143,7 @@ function artifact_rootfs_cli_adapter_config_prep() {
 
 	declare -g -r ARCH="${ARCH}" # make readonly for finding who tries to change it
 	if [[ ${ARCH} != "${__wanted_rootfs_arch}" ]]; then
-		exit_with_error "Param 'ARCH' is set to '${ARCH}' after config, but different from wanted '${__wanted_rootfs_arch}'"
-	fi
-}
-
-function artifact_rootfs_get_default_oci_target() {
-	artifact_oci_target_base="${GHCR_SOURCE}/armbian/os/"
-}
-
-function artifact_rootfs_is_available_in_local_cache() {
-	is_artifact_available_in_local_cache
-}
-
-function artifact_rootfs_is_available_in_remote_cache() {
-	is_artifact_available_in_remote_cache
-}
-
-function artifact_rootfs_obtain_from_remote_cache() {
-	obtain_artifact_from_remote_cache
-}
-
-function artifact_rootfs_deploy_to_remote_cache() {
-	upload_artifact_to_oci
-}
+		31: 	display_alert "rootfs version" "packages_hash: '${packages_hash-}' cache_type: '${cache_type-}' rootfs_cache_id: '${rootfs_cache_id}'" "info"
+		41: 	[ -z ${tmpfs_estimated_size} ] && exit_with_error "tmpfs_estimated_size is not set"
+		84: 	if [ ! -f ${artifact_final_file} ]; then
+		142: if [ ${ARCH} != "${__wanted_rootfs_arch}" ]; then
