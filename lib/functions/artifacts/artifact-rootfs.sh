@@ -31,7 +31,7 @@ function artifact_rootfs_prepare_version() {
 
 	calculate_rootfs_cache_id # sets rootfs_cache_id
 
-	display_alert "rootfs version" "packages_hash: '${packages_hash:-}' cache_type: '${cache_type:-}' rootfs_cache_id: '${rootfs_cache_id}'" "info"
+	display_alert "rootfs version" "packages_hash: '${packages_hash-}' cache_type: '${cache_type-}' rootfs_cache_id: '${rootfs_cache_id}'" "info"
 
 	declare -a reasons=(
 		"arch \"${ARCH}\""
@@ -41,7 +41,7 @@ function artifact_rootfs_prepare_version() {
 	)
 
 	# add more reasons for desktop stuff
-	if [[ "${DESKTOP_ENVIRONMENT}" != "" ]]; then
+	if [[ ${DESKTOP_ENVIRONMENT} != "" ]]; then
 		reasons+=("desktop_environment \"${DESKTOP_ENVIRONMENT}\"")
 		reasons+=("desktop_environment_config_name \"${DESKTOP_ENVIRONMENT_CONFIG_NAME}\"")
 		reasons+=("desktop_appgroups_selected \"${DESKTOP_APPGROUPS_SELECTED}\"")
@@ -84,7 +84,7 @@ function artifact_rootfs_build_from_sources() {
 	debug_var cache_name
 	debug_var cache_fname
 
-	if [[ ! -f "${artifact_final_file}" ]]; then
+	if [[ ! -f ${artifact_final_file} ]]; then
 		exit_with_error "Rootfs cache file '${artifact_final_file}' does not exist after create_new_rootfs_cache()."
 	else
 		display_alert "Rootfs cache file '${artifact_final_file}' exists after create_new_rootfs_cache()." "YESSS" "debug"
@@ -142,7 +142,7 @@ function artifact_rootfs_cli_adapter_config_prep() {
 	prep_conf_main_only_rootfs_ni < /dev/null # no stdin for this, so it bombs if tries to be interactive.
 
 	declare -g -r ARCH="${ARCH}" # make readonly for finding who tries to change it
-	if [[ "${ARCH}" != "${__wanted_rootfs_arch}" ]]; then
+	if [[ ${ARCH} != "${__wanted_rootfs_arch}" ]]; then
 		exit_with_error "Param 'ARCH' is set to '${ARCH}' after config, but different from wanted '${__wanted_rootfs_arch}'"
 	fi
 }
