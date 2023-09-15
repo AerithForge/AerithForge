@@ -10,11 +10,11 @@
 #!/usr/bin/env bash
 
 function interactive_config_prepare_terminal() {
-	if [[ -z $ROOT_FS_CREATE_ONLY ]]; then
-		if [[ -t 0 ]]; then # "-t fd return True if file descriptor fd is open and refers to a terminal". 0 = stdin, 1 = stdout, 2 = stderr, 3+ custom
+	if [ -z $ROOT_FS_CREATE_ONLY ]; then
+		if [ -t 0 ]; then # "-t fd return True if file descriptor fd is open and refers to a terminal". 0 = stdin, 1 = stdout, 2 = stderr, 3+ custom
 			# override stty size, if stdin is a terminal.
-			[[ -n $COLUMNS ]] && stty cols $COLUMNS
-			[[ -n $LINES ]] && stty rows $LINES
+			[ -n $COLUMNS ] && stty cols $COLUMNS
+			[ -n $LINES ] && stty rows $LINES
 			declare -g TTY_X=$(($(stty size | awk '{print $2}') - 6)) # determine terminal width
 			declare -g TTY_Y=$(($(stty size | awk '{print $1}') - 6)) # determine terminal height
 		fi
@@ -46,7 +46,7 @@ function interactive_config_ask_kernel() {
 }
 
 function interactive_config_ask_kernel_configure() {
-	[[ -n ${KERNEL_CONFIGURE} ]] && return 0
+	[ -n ${KERNEL_CONFIGURE} ] && return 0
 	options+=("no" "Do not change the kernel configuration")
 	options+=("yes" "Show a kernel configuration menu before compilation")
 	#options+=("prebuilt" "Use precompiled packages (maintained hardware only)") # @TODO armbian-next does not support this, I think.
@@ -117,7 +117,7 @@ function get_list_of_all_buildable_boards() {
 
 function interactive_config_ask_board_list() {
 	# if BOARD is not set, display selection menu, otherwise return success
-	[[ -n ${BOARD} ]] && return 0
+	[ -n ${BOARD} ] && return 0
 
 	declare WIP_STATE=supported
 	if [[ "${EXPERT}" == "yes" ]]; then
@@ -213,21 +213,20 @@ function interactive_config_ask_branch() {
 }
 
 function interactive_config_ask_release() {
-	[[ -n ${RELEASE} ]] && return 0
+	[ -n ${RELEASE} ] && return 0
 
 	declare -a options=()
 	distros_options
 	dialog_if_terminal_set_vars --title "Choose a release package base" --backtitle "$backtitle" --menu "Select the target OS release package base; selected BRANCH='${BRANCH}'" $TTY_Y $TTY_X $((TTY_Y - 8)) "${options[@]}"
 	set_interactive_config_value RELEASE "${DIALOG_RESULT}"
-	[[ -z ${RELEASE} ]] && exit_with_error "No release selected"
-
-	return 0 # shortcircuit above!
-}
-
+	[ -n $BRANCH ]; then
+		display_alert "Already set BRANCH, skipping interactive" "${BRANCH}" "debug"
+		return 0
+	fi
 function interactive_config_ask_desktop_build() {
 	# don't show desktop option if we choose minimal build
-	[[ $HAS_VIDEO_OUTPUT == no || $BUILD_MINIMAL == yes ]] && BUILD_DESKTOP=no
-
+	[ $HAS_VIDEO_OUTPUT == no || $BUILD_MINIMAL == yes ] && BUILD_DESKTOP=no
+	[ -n ${BUILD_DESKTOP} ] && return 0
 	[[ -n ${BUILD_DESKTOP} ]] && return 0
 
 	# read distribution support status which is written to the armbian-release file
@@ -248,9 +247,9 @@ function interactive_config_ask_desktop_build() {
 }
 
 function interactive_config_ask_standard_or_minimal() {
-	[[ "${BUILDING_IMAGE}" != "yes" ]] && return 0
-	[[ $BUILD_DESKTOP != no ]] && return 0
-	[[ -n $BUILD_MINIMAL ]] && return 0
+	[ "${BUILDING_IMAGE}" != "yes" ] && return 0
+	[ $BUILD_DESKTOP != no ] && return 0
+	[ -n $BUILD_MINIMAL ] && return 0
 	options=()
 	options+=("no" "Standard image with console interface")
 	options+=("yes" "Minimal image with console interface")
