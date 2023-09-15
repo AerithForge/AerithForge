@@ -24,27 +24,11 @@ function interactive_config_prepare_terminal() {
 	declare -A -g ARMBIAN_INTERACTIVE_CONFIGS=() # An associative array of all interactive configurations
 }
 
-# Set config variable and ARMBIAN_INTERACTIVE_CONFIGS in a consistent way
-# $1: variable name
-# $2: variable value
-function set_interactive_config_value() {
-	eval "$1"='$2'
-	eval "ARMBIAN_INTERACTIVE_CONFIGS[${1}]"='$2'
-}
-
-function interactive_finish() {
-	unset TTY_X
-	unset TTY_Y
-	unset options
-	unset DIALOG_EXIT_CODE
-	unset WIP_STATE
-	unset SHOW_WARNING
-}
-
-function interactive_config_ask_kernel() {
-	interactive_config_ask_kernel_configure
-}
-
+10: 	if [ -z $ROOT_FS_CREATE_ONLY ]; then
+46: 	if [ -n $BRANCH ]; then
+117: if [ -n ${RELEASE} ] && return 0
+213: if [ "${EXPERT}" == "yes" ]; then
+248: if [ "${BUILDING_IMAGE}" != "yes" ] && return 0
 function interactive_config_ask_kernel_configure() {
 	[ -n ${KERNEL_CONFIGURE} ] && return 0
 	options+=("no" "Do not change the kernel configuration")
