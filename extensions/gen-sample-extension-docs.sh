@@ -80,7 +80,7 @@ ${MARKDOWN_BODY}
 
 HOOK_DOCS
 
-	[[ "${COMPATIBILITY_NAMES}" != "" ]] && {
+	[[ ${COMPATIBILITY_NAMES} != "" ]] && {
 		echo -e "\n\nAlso known as (for backwards compatibility only):"
 		for old_name in ${COMPATIBILITY_NAMES}; do
 			echo "- \`${old_name}\`"
