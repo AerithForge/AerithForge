@@ -12,8 +12,8 @@ function extension_finish_config__build_nvidia_kernel_module() {
 function post_install_kernel_debs__build_nvidia_kernel_module() {
 	[[ "$INSTALL_HEADERS" != "yes" ]] || [[ "$KERNEL_HAS_WORKING_HEADERS" != "yes" ]] && return 0
 	display_alert "Install nVidia packages, build kernel module in chroot" "${EXTENSION}" "info"
-	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/nvidia/*/build/make.log")
 	chroot_sdcard_apt_get_install "nvidia-dkms-${NVIDIA_DRIVER_VERSION}" "nvidia-driver-${NVIDIA_DRIVER_VERSION}" nvidia-settings
+	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/nvidia/*/build/make.log")
 }
 	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/nvidia/*/build/make.log")
 	chroot_sdcard_apt_get_install "nvidia-dkms-${NVIDIA_DRIVER_VERSION}" "nvidia-driver-${NVIDIA_DRIVER_VERSION}" nvidia-settings
