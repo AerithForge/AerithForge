@@ -45,11 +45,11 @@ function run_memoized() {
 	flock "${lock_fd}" || exit_with_error "flock() failed"
 	display_alert "Lock obtained" "${disk_cache_file}.lock" "debug"
 
-	if [[ -f "${disk_cache_file}" ]]; then
+	if [[ -f ${disk_cache_file} ]]; then
 		declare disk_cache_file_mtime_seconds
 		disk_cache_file_mtime_seconds="$(stat -c %Y "${disk_cache_file}")"
 		# if disk_cache_file is older than 1 hour, delete it and continue.
-		if [[ "${disk_cache_file_mtime_seconds}" -lt "$(($(date +%s) - 3600))" ]]; then
+		if [[ ${disk_cache_file_mtime_seconds} -lt "$(($(date +%s) - 3600))" ]]; then
 			display_alert "Deleting stale cache file" "${disk_cache_file}" "debug"
 			rm -f "${disk_cache_file}"
 		else
