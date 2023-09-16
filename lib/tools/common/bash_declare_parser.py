@@ -18,29 +18,7 @@ REGEX_BASH_DECLARE_ASSOCIATIVE_ARRAY = r"declare (-[A]) (.*?)=\((.*)\)"
 REGEX_BASH_DECLARE_SIMPLE_ARRAY = r"declare (-[a]) (.*?)=\((.*)\)"
 REGEX_SINGLE_QUOTED_SPLIT = r"'[^']+'|\S+"
 
-
-class BashDeclareParser:
-    def __init__(self, origin: str = "unknown"):
-        self.origin = origin
-
-    def parse_one(self, one_declare):
-        all_keys = {}
-        count_matches = 0
-
-        # Now parse it with regex-power! it only parses non-array, non-dictionary values, double-quoted.
-        for matchNum, match in enumerate(
-            re.finditer(REGEX_BASH_DECLARE_DOUBLE_QUOTE, one_declare, re.DOTALL),
-            start=1,
-        ):
-            count_matches += 1
-            value = self.parse_dequoted_value(
-                match.group(2), self.armbian_value_parse_double_quoted(match.group(3))
-            )
-            all_keys[match.group(2)] = value
-
-        if count_matches == 0:
-            # try for the single-quoted version
-            for matchNum, match in enumerate(
+for matchNum, match in enumerate(
                 re.finditer(REGEX_BASH_DECLARE_SINGLE_QUOTE, one_declare, re.DOTALL),
                 start=1,
             ):
@@ -114,4 +92,3 @@ class BashDeclareParser:
         ret = list(map(str.strip, ret))
         # filter out empty strings
         ret = list(filter(None, ret))
-        return ret
