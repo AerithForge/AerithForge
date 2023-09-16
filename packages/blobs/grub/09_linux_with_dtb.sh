@@ -170,11 +170,11 @@ linux_entry() {
 	fi
 	if ([ "$ubuntu_recovery" = 0 ] || [ x$type != xrecovery ]) &&
 		([ "x$GRUB_GFXPAYLOAD_LINUX" != x ] || [ "$gfxpayload_dynamic" = 1 ]); then
-		echo "	gfxmode \$linux_gfx_mode" | sed "s/^/$submenu_indentation/"
+		echo '	gfxmode $linux_gfx_mode' | sed "s/^/$submenu_indentation/"
 	fi
 
 	echo "	insmod gzio" | sed "s/^/$submenu_indentation/"
-	echo "	if [ x\$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi" | sed "s/^/$submenu_indentation/"
+	echo '	if [ x$grub_platform = xxen ]; then insmod xzio; insmod lzopio; fi' | sed "s/^/$submenu_indentation/"
 
 	if [ x$dirname = x/ ]; then
 		if [ -z "${prepare_root_cache}" ]; then
