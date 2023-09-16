@@ -18,71 +18,77 @@ REGEX_BASH_DECLARE_ASSOCIATIVE_ARRAY = r"declare (-[A]) (.*?)=\((.*)\)"
 REGEX_BASH_DECLARE_SIMPLE_ARRAY = r"declare (-[a]) (.*?)=\((.*)\)"
 REGEX_SINGLE_QUOTED_SPLIT = r"'[^']+'|\S+"
 
+for matchNum, match in enumerate(
+                re.finditer(REGEX_BASH_DECLARE_SINGLE_QUOTE, one_declare, re.DOTALL),
+                start=1,
+            ):
+                count_matches += 1
+                value = self.parse_dequoted_value(
+                    match.group(2),
+                    self.armbian_value_parse_single_quoted(match.group(3)),
+                )
+                all_keys[match.group(2)] = value
 
-class BashDeclareParser:
-	def __init__(self, origin: str = 'unknown'):
-		self.origin = origin
+        if count_matches == 0:
+            # try for the (A)ssociative Array version
+            for matchNum, match in enumerate(
+                re.finditer(
+                    REGEX_BASH_DECLARE_ASSOCIATIVE_ARRAY, one_declare, re.DOTALL
+                ),
+                start=1,
+            ):
+                count_matches += 1
+                all_keys[match.group(2)] = [
+                    "@TODO",
+                    "bash associative arrays aka dictionaries are not supported yet",
+                    match.group(3),
+                ]
 
-	def parse_one(self, one_declare):
-		all_keys = {}
-		count_matches = 0
+        if count_matches == 0:
+            # try for the simple (a)rray version
+            for matchNum, match in enumerate(
+                re.finditer(REGEX_BASH_DECLARE_SIMPLE_ARRAY, one_declare, re.DOTALL),
+                start=1,
+            ):
+                count_matches += 1
+                all_keys[match.group(2)] = [
+                    "@TODO",
+                    "bash simple-arrays are not supported yet",
+                    match.group(3),
+                ]
 
-		# Now parse it with regex-power! it only parses non-array, non-dictionary values, double-quoted.
-		for matchNum, match in enumerate(re.finditer(REGEX_BASH_DECLARE_DOUBLE_QUOTE, one_declare, re.DOTALL), start=1):
-			count_matches += 1
-			value = self.parse_dequoted_value(match.group(2), self.armbian_value_parse_double_quoted(match.group(3)))
-			all_keys[match.group(2)] = value
+        if count_matches == 0:
+            log.error(
+                f"** No matches found for Bash declare regex (origin: {self.origin}), line ==>{one_declare}<=="
+            )
 
-		if count_matches == 0:
-			# try for the single-quoted version
-			for matchNum, match in enumerate(re.finditer(REGEX_BASH_DECLARE_SINGLE_QUOTE, one_declare, re.DOTALL), start=1):
-				count_matches += 1
-				value = self.parse_dequoted_value(match.group(2), self.armbian_value_parse_single_quoted(match.group(3)))
-				all_keys[match.group(2)] = value
+        return all_keys
 
-		if count_matches == 0:
-			# try for the (A)ssociative Array version
-			for matchNum, match in enumerate(re.finditer(REGEX_BASH_DECLARE_ASSOCIATIVE_ARRAY, one_declare, re.DOTALL), start=1):
-				count_matches += 1
-				all_keys[match.group(2)] = ["@TODO", "bash associative arrays aka dictionaries are not supported yet", match.group(3)]
+    def parse_dequoted_value(self, key, value):
+        if ("_LIST" in key) or ("_DIRS" in key) or ("_ARRAY" in key):
+            value = self.armbian_value_parse_list(key, value, " ")
+        return value
 
-		if count_matches == 0:
-			# try for the simple (a)rray version
-			for matchNum, match in enumerate(re.finditer(REGEX_BASH_DECLARE_SIMPLE_ARRAY, one_declare, re.DOTALL), start=1):
-				count_matches += 1
-				all_keys[match.group(2)] = ["@TODO", "bash simple-arrays are not supported yet", match.group(3)]
+    def armbian_value_parse_double_quoted(self, value: str):
+        # replace "\\\\n" with actual newline
+        value = value.replace("\\\\n", "\n")
+        value = value.replace("\\\\t", "\t")
+        value = value.replace('\\"', '"')
+        return value
 
-		if count_matches == 0:
-			log.error(f"** No matches found for Bash declare regex (origin: {self.origin}), line ==>{one_declare}<==")
+    def armbian_value_parse_single_quoted(self, value: str):
+        value = value.replace("\\n", "\n")
+        value = value.replace("\n", "\n")
+        value = value.replace("\\t", "\t")
+        value = value.replace("\t", "\t")
+        return value
 
-		return all_keys
-
-	def parse_dequoted_value(self, key, value):
-		if ("_LIST" in key) or ("_DIRS" in key) or ("_ARRAY" in key):
-			value = self.armbian_value_parse_list(key, value, " ")
-		return value
-
-	def armbian_value_parse_double_quoted(self, value: str):
-		# replace "\\\\n" with actual newline
-		value = value.replace('\\\\n', "\n")
-		value = value.replace('\\\\t', "\t")
-		value = value.replace('\\\"', '"')
-		return value
-
-	def armbian_value_parse_single_quoted(self, value: str):
-		value = value.replace('\\n', "\n")
-		value = value.replace('\n', "\n")
-		value = value.replace('\\t', "\t")
-		value = value.replace('\t', "\t")
-		return value
-
-	def armbian_value_parse_list(self, key, item_value, delimiter):
-		ret = []
-		good = re.findall(REGEX_SINGLE_QUOTED_SPLIT, item_value)
-		for item in good:
-			ret.append(item)
-		# trim whitespace out of every value
-		ret = list(map(str.strip, ret))
-		# filter out empty strings
-		ret = list(filter(None, ret))
-		return ret
+    def armbian_value_parse_list(self, key, item_value, delimiter):
+        ret = []
+        good = re.findall(REGEX_SINGLE_QUOTED_SPLIT, item_value)
+        for item in good:
+            ret.append(item)
+        # trim whitespace out of every value
+        ret = list(map(str.strip, ret))
+        # filter out empty strings
+        ret = list(filter(None, ret))

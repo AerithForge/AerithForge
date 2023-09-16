@@ -22,13 +22,13 @@ SRC="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 cd "${SRC}" || exit
 
 # check for whitespace in ${SRC} and exit for safety reasons
-grep -q "[[:space:]]" <<< "${SRC}" && {
+grep -q "[[:space:]]" << "${SRC}" && {
 	echo "\"${SRC}\" contains whitespace. Not supported. Aborting." >&2
 	exit 1
 }
 
 # Sanity check.
-if [[ ! -f "${SRC}"/lib/single.sh ]]; then
+if [ ! -f "${SRC}"/lib/single.sh ]; then
 	echo "Error: missing build directory structure"
 	echo "Please clone the full repository https://github.com/armbian/build/"
 	exit 255
@@ -44,7 +44,7 @@ logging_init
 traps_init
 
 # make sure git considers our build system dir as a safe dir (only if actually building)
-[[ "${CONFIG_DEFS_ONLY}" != "yes" && "${PRE_PREPARED_HOST}" != "yes" ]] && git_ensure_safe_directory "${SRC}"
+[ "${CONFIG_DEFS_ONLY}" != "yes" ] && [ "${PRE_PREPARED_HOST}" != "yes" ] && git_ensure_safe_directory "${SRC}"
 
 # Execute the main CLI entrypoint.
 cli_entrypoint "$@"

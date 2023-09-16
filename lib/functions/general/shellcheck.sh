@@ -34,7 +34,7 @@ function shellcheck_debian_control_scripts() {
 			;;
 	esac
 
-	for exclude in "${excludes[@]}"; do
+	for exclude in "${!excludes[@]}"; do
 		params+=(--exclude="${exclude}")
 	done
 
@@ -53,14 +53,14 @@ function run_tool_shellcheck() {
 
 	declare non_cache_dir="/armbian-tools/shellcheck" # To deploy/reuse cached SHELLCHECK in a Docker image.
 
-	if [[ -z "${DIR_SHELLCHECK}" ]]; then
+	if [[ -z ${DIR_SHELLCHECK} ]]; then
 		display_alert "DIR_SHELLCHECK is not set, using default" "SHELLCHECK" "debug"
 
-		if [[ "${deploy_to_non_cache_dir:-"no"}" == "yes" ]]; then
+		if [[ ${deploy_to_non_cache_dir:-"no"} == "yes" ]]; then
 			DIR_SHELLCHECK="${non_cache_dir}" # root directory.
 			display_alert "Deploying SHELLCHECK to non-cache dir" "DIR_SHELLCHECK: ${DIR_SHELLCHECK}" "debug"
 		else
-			if [[ -n "${SRC}" ]]; then
+			if [[ -n ${SRC} ]]; then
 				DIR_SHELLCHECK="${SRC}/cache/tools/shellcheck"
 			else
 				display_alert "Missing DIR_SHELLCHECK, or SRC fallback" "DIR_SHELLCHECK: ${DIR_SHELLCHECK}; SRC: ${SRC}" "SHELLCHECK" "err"
@@ -76,11 +76,11 @@ function run_tool_shellcheck() {
 	declare MACHINE="${BASH_VERSINFO[5]}" SHELLCHECK_OS SHELLCHECK_ARCH
 	display_alert "Running SHELLCHECK" "SHELLCHECK version ${SHELLCHECK_VERSION}" "debug"
 	MACHINE="${BASH_VERSINFO[5]}"
-	case "$MACHINE" in
+	case "${MACHINE}" in
 		*darwin*) SHELLCHECK_OS="darwin" ;;
 		*linux*) SHELLCHECK_OS="linux" ;;
 		*)
-			exit_with_error "unknown os: $MACHINE"
+			exit_with_error "unknown os: ${MACHINE}"
 			;;
 	esac
 
@@ -99,18 +99,18 @@ function run_tool_shellcheck() {
 	declare ACTUAL_VERSION
 
 	# Check if we have a cached version in a Docker image, and copy it over before possibly updating it.
-	if [[ "${deploy_to_non_cache_dir:-"no"}" != "yes" && -d "${non_cache_dir}" && ! -f "${SHELLCHECK_BIN}" ]]; then
+	if [[ ${deploy_to_non_cache_dir:-"no"} != "yes" ]] && [[ -d ${non_cache_dir} ]] && [[ ! -f ${SHELLCHECK_BIN} ]]; then
 		display_alert "Using cached SHELLCHECK from Docker image" "SHELLCHECK" "debug"
 		run_host_command_logged cp -v "${non_cache_dir}/"* "${DIR_SHELLCHECK}/"
 	fi
 
-	if [[ ! -f "${SHELLCHECK_BIN}" ]]; then
+	if [[ ! -f ${SHELLCHECK_BIN} ]]; then
 		do_with_retries 5 try_download_shellcheck_tooling
 	fi
 	ACTUAL_VERSION="$("${SHELLCHECK_BIN}" --version | grep "^version" | xargs echo -n)"
 	display_alert "Running SHELLCHECK ${ACTUAL_VERSION}" "SHELLCHECK" "debug"
 
-	if [[ "${deploy_to_non_cache_dir:-"no"}" == "yes" ]]; then
+	if [[ ${deploy_to_non_cache_dir:-"no"} == "yes" ]]; then
 		display_alert "Deployed SHELLCHECK to non-cache dir" "DIR_SHELLCHECK: ${DIR_SHELLCHECK}" "debug"
 		return 0 # don't actually execute.
 	fi
@@ -130,9 +130,9 @@ function try_download_shellcheck_tooling() {
 		return 1
 	}
 
-	run_host_command_logged mv "${SHELLCHECK_BIN}.tar.xz.tmp" "${SHELLCHECK_BIN}.tar.xz"
-	run_host_command_logged tar -xf "${SHELLCHECK_BIN}.tar.xz" -C "${DIR_SHELLCHECK}" "shellcheck-v${SHELLCHECK_VERSION}/shellcheck"
-	run_host_command_logged mv "${DIR_SHELLCHECK}/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" "${SHELLCHECK_BIN}"
-	run_host_command_logged rm -rf "${DIR_SHELLCHECK}/shellcheck-v${SHELLCHECK_VERSION}" "${SHELLCHECK_BIN}.tar.xz"
-	run_host_command_logged chmod +x "${SHELLCHECK_BIN}"
+	run_host_command_logged mv "${SHELLCHECK_BIN}.tar.xz.tmp" "${SHELLCHECK_BIN}.tar.xz" || true
+	run_host_command_logged tar -xf "${SHELLCHECK_BIN}.tar.xz" -C "${DIR_SHELLCHECK}" "shellcheck-v${SHELLCHECK_VERSION}/shellcheck" || true
+	run_host_command_logged mv "${DIR_SHELLCHECK}/shellcheck-v${SHELLCHECK_VERSION}/shellcheck" "${SHELLCHECK_BIN}" || true
+	run_host_command_logged rm -rf "${DIR_SHELLCHECK}/shellcheck-v${SHELLCHECK_VERSION}" "${SHELLCHECK_BIN}.tar.xz" || true
+	run_host_command_logged chmod +x "${SHELLCHECK_BIN}" || true
 }
