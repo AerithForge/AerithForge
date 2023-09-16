@@ -1,0 +1,196 @@
+--- a/patch/kernel/sunxi-next/patch-name.patch
++++ b/patch/kernel/sunxi-next/patch-name.patch
+@@ -1,10 +1,10 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -12,6 +12,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -20,6 +22,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -28,6 +32,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -36,6 +42,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -44,6 +52,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -52,6 +62,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -60,6 +72,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -68,6 +82,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -76,6 +92,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -84,6 +102,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -92,6 +112,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+@@ -100,6 +122,8 @@
+ // Original code
+ 
+-#if [ "x$var" = "xval" ]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
+ 
+ // Modified code
+ 
+-#if [[ "$var" == "val" ]]
++#if [[ "$var" == "val" ]]
+     // Code block
+ #fi
