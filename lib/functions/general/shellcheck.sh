@@ -99,7 +99,7 @@ function run_tool_shellcheck() {
 	declare ACTUAL_VERSION
 
 	# Check if we have a cached version in a Docker image, and copy it over before possibly updating it.
-	if [[ ${deploy_to_non_cache_dir:-"no"} != "yes" && -d ${non_cache_dir} && ! -f ${SHELLCHECK_BIN} ]]; then
+	if [[ ${deploy_to_non_cache_dir:-"no"} != "yes" ]] && [[ -d ${non_cache_dir} ]] && [[ ! -f ${SHELLCHECK_BIN} ]]; then
 		display_alert "Using cached SHELLCHECK from Docker image" "SHELLCHECK" "debug"
 		run_host_command_logged cp -v "${non_cache_dir}/"* "${DIR_SHELLCHECK}/"
 	fi
