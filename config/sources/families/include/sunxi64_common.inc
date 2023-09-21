@@ -1,73 +1,64 @@
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
-#
+# shellcheck shell=sh # POSIX
+# shellcheck disable=SC2034 # FIXME-QA(Krey): Include source directories
+
+# Architecture-specific configuration
+
 enable_extension "sunxi-tools"
-declare -g ARCH=arm64
-declare -g ATF_TARGET_MAP="PLAT=$ATF_PLAT DEBUG=1 bl31;;build/$ATF_PLAT/debug/bl31.bin"
-declare -g ATFBRANCH="tag:v2.9.0"
-declare -g BOOTDELAY=1
-declare -g BOOTPATCHDIR="${BOOTPATCHDIR:-"u-boot-sunxi"}"
-declare -g BOOTBRANCH="${BOOTBRANCH:-"tag:v2023.07.02"}"
-declare -g BOOTENV_FILE='sunxi.txt'
-UBOOT_TARGET_MAP="${UBOOT_TARGET_MAP:-BINMAN_ALLOW_MISSING=1;;u-boot-sunxi-with-spl.bin}"
-declare -g BOOTSCRIPT='boot-sun50i-next.cmd:boot.cmd'
-declare -g LINUXFAMILY=sunxi64
 
-source "${BASH_SOURCE%/*}/crust_firmware.inc"
+ARCH="arm64"
 
-case $BRANCH in
+LINUXFAMILY="sunxi64"
 
-	legacy)
-		declare -g KERNEL_MAJOR_MINOR="5.15" # Major and minor versions of this kernel.
-		declare -g KERNELBRANCH="tag:v5.15.131"
-		;;
+INITRD_ARCH="arm64"
 
-	current)
-		declare -g KERNEL_MAJOR_MINOR="6.1" # Major and minor versions of this kernel.
-		declare -g KERNELBRANCH="tag:v6.1.53"
-		;;
+NAME_INITRD="uInitrd"
 
-	edge)
-		declare -g KERNEL_MAJOR_MINOR="6.5" # Major and minor versions of this kernel.
-		declare -g KERNELBRANCH="tag:v6.5.3"
-		;;
-esac
+NAME_KERNEL="Image"
 
-KERNELPATCHDIR="archive/sunxi-${KERNEL_MAJOR_MINOR}"
+KERNEL_IMAGE_TYPE="Image"
+
+# shellcheck source=./crust_firmware.inc
+. "$SRC/config/sources/families/include/crust_firmware.inc"
 
 family_tweaks() {
 	# execute specific tweaks function if present
-	[[ $(type -t family_tweaks_s) == function ]] && family_tweaks_s
-	cp $SRC/packages/blobs/splash/armbian-u-boot-24.bmp $SDCARD/boot/boot.bmp
+	! command -v family_tweaks_s 1>/dev/null || family_tweaks_s
+	cp "$SRC/packages/blobs/splash/armbian-u-boot-24.bmp" "$SDCARD/boot/boot.bmp"
 }
 
+# This functions writes the u-boot bootloader to the desired location e.g. SDCARD
 write_uboot_platform() {
-	dd if=/dev/zero of=$2 bs=1k count=1023 seek=1 status=noxfer > /dev/null 2>&1
-	dd if=$1/u-boot-sunxi-with-spl.bin of=$2 bs=1024 seek=8 status=noxfer > /dev/null 2>&1
+	[ -n "$1" ] || exit_with_error "First input parsed in function write_uboot_platform is unset"
+	[ -n "$2" ] || exit_with_error "Second input parsed in function write_uboot_platform is unset"
+
+	display_alert "Writing u-boot in '$2' from '$1//u-boot-sunxi-with-spl.bin'" "info"
+
+	dd if=/dev/zero of="$2" bs=1k count=1023 seek=1 status=noxfer
+
+	dd if="$1/u-boot-sunxi-with-spl.bin" of="$2" bs=1024 seek=8 status=noxfer
 }
 
+# shellcheck disable=SC3043 # POSIX(Krey): `local` is undefined in POSIX sh -> This functiona needs refactor
 setup_write_uboot_platform() {
 	if grep -q "ubootpart" /proc/cmdline; then
 		# mainline with new boot script
-		local tmp=$(cat /proc/cmdline)
+		local tmp
+		tmp="$(cat /proc/cmdline)"
 		tmp="${tmp##*ubootpart=}"
 		tmp="${tmp%% *}"
-		[[ -n $tmp ]] && local part=$(findfs PARTUUID=$tmp 2> /dev/null)
-		[[ -n $part ]] && local dev=$(lsblk -n -o PKNAME $part 2> /dev/null)
-		[[ -n $dev ]] && DEVICE="/dev/$dev"
+		[ -z "$tmp" ] || local part="$(findfs PARTUUID=$tmp 2> /dev/null)"
+		[ -z "$part" ] || local dev="$(lsblk -n -o PKNAME $part 2> /dev/null)"
+		[ -z "$dev" ] || DEVICE="/dev/$dev"
 	else
 		# legacy or old boot script
-		local tmp=$(cat /proc/cmdline)
+		local tmp
+		tmp="$(cat /proc/cmdline)"
 		tmp="${tmp##*root=}"
 		tmp="${tmp%% *}"
-		[[ -n $tmp ]] && local part=$(findfs $tmp 2> /dev/null)
-		[[ -n $part ]] && local dev=$(lsblk -n -o PKNAME $part 2> /dev/null)
+		[ -n "$tmp" ] || local part="$(findfs $tmp 2> /dev/null)"
+		[ -n "$part" ] || local dev="$(lsblk -n -o PKNAME $part 2> /dev/null)"
 		# do not try to write u-boot to USB devices
-		[[ -n $dev && $dev == mmcblk* ]] && DEVICE="/dev/$dev"
+		# shellcheck disable=SC3010 # FIXME-QA(Krey): Unsure about the rationale for the -n check, kept as is to avoid failures
+		[[ -n "$dev" && "$dev" == mmcblk* ]] && DEVICE="/dev/$dev"
 	fi
 }

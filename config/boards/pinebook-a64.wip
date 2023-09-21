@@ -7,3 +7,11 @@ KERNEL_TARGET="legacy,current,edge"
 FULL_DESKTOP="yes"
 BOOT_LOGO="desktop"
 CRUSTCONFIG="a64_defconfig"
+
+ASOUND_STATE="asound.state.pinebook-next"
+
+post_family_tweaks__pinebook-a64() {
+	cp -R "$SRC"/packages/blobs/rtl8723bt_fw/* "$SDCARD/lib/firmware/rtl_bt/"
+	touch "$SDCARD/etc/sysctl.d/sysrq.conf"
+	echo "kernel.sysrq = 0" >> "$SDCARD/etc/sysctl.d/sysrq.conf"
+}

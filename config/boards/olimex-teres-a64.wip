@@ -1,23 +1,57 @@
 # Allwinner A64 quad core 2GB SoC Wi-Fi/BT Revision C
-BOARD_NAME="OLIMEX Teres A64" 
+# shellcheck shell=sh # POSIX
+# shellcheck disable=SC2034 # FIXME-QA(Krey): Figure out the sourcing for this
+
+# NOTE(Krey): IMAGE_PARTITION_TABLE="gpt" was not tested, uses msdos by default
+
+BOARD_MAINTAINER="Kreyren"
+
+# Metadata
+BOARD_NAME="OLIMEX Teres A64"
+BOARD_DESCRIPTION="Allwinner A64 quad core 2GB SoC Wi-Fi/BT Revision C"
 
 # Specified in https://linux-sunxi.org/Allwinner_SoC_Family
 BOARDFAMILY="sun50iw1"
 
-BOARD_MAINTAINER="Kreyren"
+# Bootloader
+BOOTCONFIG="teres_i_defconfig"
+CRUSTCONFIG="teres_i_defconfig"
 
-# Legacy has been removed as it's too old and disfunctional for this board
-KERNEL_TARGET="current,edge"
+IMAGE_PARTITION_TABLE="gpt"
 
-# NOTE(Krey): IMAGE_PARTITION_TABLE="gpt" was not tested, uses msdos by default
+BOOT_FDT_FILE="allwinner/sun50i-a64-teres-i.dts"
+
+# Kernel
+## Legacy is not recommended as it's too disfunctional
+KERNEL_TARGET="legacy,current,edge"
+
+# For optimalized kernel build you should start by booting the generic configuration, cloning the linux kernel and invoking `make allmodconfig`, this will give you to ~95% optimized kernel config that should then be vigurously tested to make sure that everything works as it should
+case "$BRANCH" in
+	legacy)
+		display_alert "The legacy branch is not recommended for $BOARD as it's too disfunctional, caveat emperor"
+		LINUXCONFIG="linux-sunxi64-legacy"
+		;;
+	current) LINUXCONFIG="linux-sunxi64-current.config" ;;
+	edge) LINUXCONFIG="linux-sunxi64-edge.config" ;;
+	*) exit_with_error "This BRANCH '$BRANCH' does not have defined linux config!"
+esac
 
 # Enable serial console by default
 DEFAULT_CONSOLE="serial"
 SERIALCON="ttyS0:115200"
 
-# Bootloader
-BOOTCONFIG="teres_i_defconfig"
-
-# NOTE(Krey): Pulseaudio is needed for the audio to work especially in pipewire configuration, I wasn't able to make it work just off of ALSA
+# Misc
+## NOTE(Krey): Pulseaudio is needed for the audio to work especially in pipewire configuration, I wasn't able to make it work just off of ALSA
 PACKAGE_LIST_BOARD="pulseaudio"
-CRUSTCONFIG="a64_defconfig"
+
+# shellcheck disable=SC3033 # It complains about dash '-' as that is not supported in POSIX sh
+post_family_tweaks__olimex-teres-a64() {
+	# Add proprietary WiFi/BLE firmware for RTL8723BS? Can be overidden with 'TERES_NO_BLOBS'
+	[ "$TERES_NO_BLOBS" = yes ] || {
+		display_alert "Option 'TERES_NO_BLOBS' is not used, applying proprietary blob for the WiFi/BLE module" info
+		cp -v "$SRC/packages/blobs/rtlwifi/rtl8723bs_bt.bin" "$SDCARD/boot/rtl8723bs_bt.bin"
+		return 0
+	}
+
+	display_alert "Option 'TERES_NO_BLOBS' is used, be aware that the WiFi/BLE module won't work without the proprietary firmware blob" warn
+}
