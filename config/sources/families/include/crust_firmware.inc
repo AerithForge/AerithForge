@@ -6,18 +6,24 @@
 # This file is a part of the Armbian Build Framework
 # https://github.com/armbian/build/
 #
-declare -g CRUST_TARGET_MAP="scp;;build/scp/scp.bin"
 
-if [[ -n "${CRUSTCONFIG}" ]]; then
-    [[ -z $CRUSTSOURCE ]] && CRUSTSOURCE='https://github.com/crust-firmware/crust'
-    [[ -z $CRUSTDIR ]] && CRUSTDIR='crust-sunxi-mainline'
-    [[ -z $CRUSTBRANCH ]] && CRUSTBRANCH='tag:v0.6'
-    [[ -z $CRUST_USE_GCC ]] && CRUST_USE_GCC='> 9.1.0'
-    [[ -z $CRUST_COMPILER ]] && CRUST_COMPILER='or1k-elf-'
+# Generic configuration of crust
 
-    # Apply crust patches if crust is enabled
-    BOOTPATCHDIR="${BOOTPATCHDIR} u-boot-sunxi-crust"
+# shellcheck shell=sh # POSIX
+# shellcheck disable=SC2034 # FIXME-QA(Krey): Add source paths for the variables
 
-    # Use a different BOOTDIR so that we don't leave scp.bin behind for non crust builds
-    BOOTDIR="u-boot-crust"
-fi
+[ -n "$CRUST_TARGET_MAP" ] || CRUST_TARGET_MAP="scp;;build/scp/scp.bin"
+
+[ -z "${CRUSTCONFIG}" ] || {
+	[ -n "$CRUSTSOURCE" ] || CRUSTSOURCE='https://github.com/crust-firmware/crust'
+	[ -n "$CRUSTDIR" ] || CRUSTDIR="crust-sunxi-$RELEASE"
+	[ -n "$CRUSTBRANCH" ] || CRUSTBRANCH='tag:v0.6'
+	[ -n "$CRUST_USE_GCC" ] || CRUST_USE_GCC='> 9.1.0'
+	[ -n "$CRUST_COMPILER" ] || CRUST_COMPILER='or1k-elf-'
+
+	# Apply crust patches if crust is enabled
+	BOOTPATCHDIR="$BOOTPATCHDIR u-boot-sunxi-crust"
+
+	# Use a different BOOTDIR so that we don't leave scp.bin behind for non crust builds
+	BOOTDIR="u-boot-crust"
+}

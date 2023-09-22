@@ -28,23 +28,20 @@ grep -q "[[:space:]]" <<< "${SRC}" && {
 }
 
 # Sanity check.
-if [[ ! -f "${SRC}"/lib/single.sh ]]; then
+if [[ ! -f "$SRC/lib/single.sh" ]]; then
 	echo "Error: missing build directory structure"
 	echo "Please clone the full repository https://github.com/armbian/build/"
 	exit 255
 fi
 
-# shellcheck source=lib/single.sh
-source "${SRC}"/lib/single.sh
+# shellcheck source=./lib/single.sh
+. "$SRC/lib/single.sh"
 
 # initialize logging variables. (this does not consider parameters at this point, only environment variables)
 logging_init
 
 # initialize the traps
 traps_init
-
-# make sure git considers our build system dir as a safe dir (only if actually building)
-[[ "${CONFIG_DEFS_ONLY}" != "yes" && "${PRE_PREPARED_HOST}" != "yes" ]] && git_ensure_safe_directory "${SRC}"
 
 # Execute the main CLI entrypoint.
 cli_entrypoint "$@"
