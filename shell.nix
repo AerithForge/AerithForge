@@ -9,7 +9,7 @@ pkgs.mkShell {
     bashInteractive # For evaluation
     fakeroot # For packaging apt packages
     nil # Language server for nix
-    git # For manipulating the repository
+    git # For manipulating the repository and runtime
     shellcheck # For linting shell
     util-linux # Needed for uuidgen
   ];
