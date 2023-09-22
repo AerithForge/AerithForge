@@ -5,9 +5,11 @@
 pkgs.mkShell {
   name = "armbian-build";
   buildInputs = with pkgs; [
-    bash # For evaluation
+    # `bashInteractive` is important as simple using `bash` will be unable to use `compgen`
+    bashInteractive # For evaluation
+    fakeroot # For packaging apt packages
     nil # Language server for nix
-    git # For manipulating with the repository and runtime
+    git # For manipulating the repository and runtime
     shellcheck # For linting shell
     util-linux # Needed for uuidgen
   ];
