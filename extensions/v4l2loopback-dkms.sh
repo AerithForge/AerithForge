@@ -8,7 +8,7 @@ function extension_finish_config__build_v4l2loopback_dkms_kernel_module() {
 }
 
 function post_install_kernel_debs__build_v4l2loopback_dkms_kernel_module() {
-	[[ "${INSTALL_HEADERS}" != "yes" ]] || [[ "${KERNEL_HAS_WORKING_HEADERS}" != "yes" ]] && return 0
+	[[ "$INSTALL_HEADERS" != "yes" ]] || [[ "$KERNEL_HAS_WORKING_HEADERS" != "yes" ]] && return 0
 	display_alert "Install v4l2loopback-dkms packages, will build kernel module in chroot" "${EXTENSION}" "info"
 	declare -g if_error_detail_message="v4l2loopback-dkms build failed, extension 'v4l2loopback-dkms'"
 	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/v4l2loopback*/*/build/*.log")

@@ -10,11 +10,11 @@ function extension_finish_config__build_nvidia_kernel_module() {
 }
 
 function post_install_kernel_debs__build_nvidia_kernel_module() {
-	[[ "${INSTALL_HEADERS}" != "yes" ]] || [[ "${KERNEL_HAS_WORKING_HEADERS}" != "yes" ]] && return 0
+	[[ "$INSTALL_HEADERS" != "yes" ]] || [[ "$KERNEL_HAS_WORKING_HEADERS" != "yes" ]] && return 0
 	display_alert "Install nVidia packages, build kernel module in chroot" "${EXTENSION}" "info"
-	# chroot_sdcard_apt_get_install() is in lib/logging/runners.sh which handles "running" of stuff nicely.
-	# chroot_sdcard_apt_get_install() -> chroot_sdcard_apt_get() -> chroot_sdcard() -> run_host_command_logged_raw()
-	# it handles bash-specific quoting issues, apt proxies, logging, and errors.
+	chroot_sdcard_apt_get_install "nvidia-dkms-${NVIDIA_DRIVER_VERSION}" "nvidia-driver-${NVIDIA_DRIVER_VERSION}" nvidia-settings
+	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/nvidia/*/build/make.log")
+}
 	declare -ag if_error_find_files_sdcard=("/var/lib/dkms/nvidia/*/build/make.log")
 	chroot_sdcard_apt_get_install "nvidia-dkms-${NVIDIA_DRIVER_VERSION}" "nvidia-driver-${NVIDIA_DRIVER_VERSION}" nvidia-settings
 }
