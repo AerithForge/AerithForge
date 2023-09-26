@@ -6,9 +6,20 @@
 #
 # This file is a part of the Armbian Build Framework
 # https://github.com/armbian/build/
+#
+# This script contains functions for interactive configuration of the Armbian build process.
+# It includes functions for preparing the terminal, setting configuration values, finishing the interactive process,
+# asking for kernel configuration, getting a list of all buildable boards, asking for board list, branch, release,
+# desktop build, and standard or minimal configuration.
 
 #!/usr/bin/env bash
 
+# This function prepares the terminal for the interactive configuration process.
+# It sets the terminal size and declares global variables for terminal width and height.
+# It also sets a backtitle for all menus and declares an associative array for all interactive configurations.
+# Inputs: None
+# Outputs: None
+# Side effects: Modifies global variables TTY_X, TTY_Y, backtitle, and ARMBIAN_INTERACTIVE_CONFIGS
 function interactive_config_prepare_terminal() {
 	if [[ -z $ROOT_FS_CREATE_ONLY ]]; then
 		if [[ -t 0 ]]; then # "-t fd return True if file descriptor fd is open and refers to a terminal". 0 = stdin, 1 = stdout, 2 = stderr, 3+ custom
@@ -60,31 +71,38 @@ function interactive_config_ask_kernel_configure() {
 # declare -a arr_all_board_names=() arr_all_board_options=()                                                                                              # arrays
 # declare -A dict_all_board_types=() dict_all_board_source_files=() dict_all_board_descriptions=()                                                        # dictionaries
 # get_list_of_all_buildable_boards arr_all_board_names arr_all_board_options dict_all_board_types dict_all_board_source_files dict_all_board_descriptions # invoke
+# This function generates a list of all buildable boards.
+# It first declares arrays for board types and file paths, and references for board names, options, types, source files, and descriptions.
+# Then it loops over the board file paths and types, and for each board file, it extracts the board name and description and adds them to the respective dictionaries.
+# If the second or fifth reference is specified, it also prepares the options for the dialog menu.
+# Inputs: References to arrays for board names and options, and dictionaries for board types, source files, and descriptions
+# Outputs: None
+# Side effects: Modifies the referenced arrays and dictionaries
 function get_list_of_all_buildable_boards() {
 	display_alert "Generating list of all available boards" "might take a while" ""
 	local -a board_types=("conf")
-	[[ "${WIP_STATE}" != "supported" ]] && board_types+=("wip" "csc" "eos" "tvb")
+	[[ ${WIP_STATE} != "supported" ]] && board_types+=("wip" "csc" "eos" "tvb")
 	local -a board_file_paths=("${SRC}/config/boards" "${USERPATCHES_PATH}/config/boards")
 
 	# local -n is a name reference, see https://www.linuxjournal.com/content/whats-new-bash-parameter-expansion
 	# it works with arrays and associative arrays/dictionaries
 	local -n ref_arr_all_board_names="${1}"
-	[[ "${2}" != "" ]] && local -n ref_arr_all_board_options="${2}" # optional
+	[[ ${2} != "" ]] && local -n ref_arr_all_board_options="${2}" # optional
 	local -n ref_dict_all_board_types="${3}"
 	local -n ref_dict_all_board_source_files="${4}"
-	[[ "${5}" != "" ]] && local -n ref_dict_all_board_descriptions="${5}" # optional
+	[[ ${5} != "" ]] && local -n ref_dict_all_board_descriptions="${5}" # optional
 
 	declare -i prepare_options=0
-	if [[ "${2}" != "" || "${5}" != "" ]]; then # only if second or fifth reference specified, otherwise too costly
+	if [[ ${2} != "" || ${5} != "" ]]; then # only if second or fifth reference specified, otherwise too costly
 		prepare_options=1
 	fi
 
 	local board_file_path board_type full_board_file
 	for board_file_path in "${board_file_paths[@]}"; do
-		[[ ! -d "${board_file_path}" ]] && continue
+		[[ ! -d ${board_file_path} ]] && continue
 		for board_type in "${board_types[@]}"; do
 			for full_board_file in "${board_file_path}"/*."${board_type}"; do
-				[[ "${full_board_file}" == *"*"* ]] && continue # ignore non-matches, due to bash's (non-)globbing behaviour
+				[[ ${full_board_file} == *"*"* ]] && continue # ignore non-matches, due to bash's (non-)globbing behaviour
 				local board_name board_desc
 				board_name="$(basename "${full_board_file}" | cut -d'.' -f1)"
 				ref_dict_all_board_types["${board_name}"]="${board_type}"
@@ -120,7 +138,7 @@ function interactive_config_ask_board_list() {
 	[[ -n ${BOARD} ]] && return 0
 
 	declare WIP_STATE=supported
-	if [[ "${EXPERT}" == "yes" ]]; then
+	if [[ ${EXPERT} == "yes" ]]; then
 		display_alert "Expert mode!" "You can select all boards" "info"
 		WIP_STATE=unsupported
 	fi
@@ -248,7 +266,7 @@ function interactive_config_ask_desktop_build() {
 }
 
 function interactive_config_ask_standard_or_minimal() {
-	[[ "${BUILDING_IMAGE}" != "yes" ]] && return 0
+	[[ ${BUILDING_IMAGE} != "yes" ]] && return 0
 	[[ $BUILD_DESKTOP != no ]] && return 0
 	[[ -n $BUILD_MINIMAL ]] && return 0
 	options=()
