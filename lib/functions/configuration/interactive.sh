@@ -9,6 +9,14 @@
 
 #!/usr/bin/env bash
 
+# This function prepares the terminal for interactive configuration. It sets the terminal size and title.
+# ROOT_FS_CREATE_ONLY: If this variable is set, the function will not execute.
+# COLUMNS: The width of the terminal. If this variable is set, it will override the terminal's column size.
+# LINES: The height of the terminal. If this variable is set, it will override the terminal's row size.
+# TTY_X: The width of the terminal minus 6.
+# TTY_Y: The height of the terminal minus 6.
+# backtitle: The title that will be used on all menus.
+# ARMBIAN_INTERACTIVE_CONFIGS: An associative array of all interactive configurations.
 function interactive_config_prepare_terminal() {
 	if [[ -z $ROOT_FS_CREATE_ONLY ]]; then
 		if [[ -t 0 ]]; then # "-t fd return True if file descriptor fd is open and refers to a terminal". 0 = stdin, 1 = stdout, 2 = stderr, 3+ custom
@@ -24,14 +32,15 @@ function interactive_config_prepare_terminal() {
 	declare -A -g ARMBIAN_INTERACTIVE_CONFIGS=() # An associative array of all interactive configurations
 }
 
-# Set config variable and ARMBIAN_INTERACTIVE_CONFIGS in a consistent way
-# $1: variable name
-# $2: variable value
+# This function sets a configuration variable and its corresponding value in the ARMBIAN_INTERACTIVE_CONFIGS array.
+# $1: The name of the variable.
+# $2: The value of the variable.
 function set_interactive_config_value() {
 	eval "$1"='$2'
 	eval "ARMBIAN_INTERACTIVE_CONFIGS[${1}]"='$2'
 }
 
+# This function cleans up the variables used in the interactive configuration.
 function interactive_finish() {
 	unset TTY_X
 	unset TTY_Y
@@ -41,10 +50,12 @@ function interactive_finish() {
 	unset SHOW_WARNING
 }
 
+# This function initiates the interactive configuration for the kernel.
 function interactive_config_ask_kernel() {
 	interactive_config_ask_kernel_configure
 }
 
+# This function asks the user to configure the kernel during the interactive configuration.
 function interactive_config_ask_kernel_configure() {
 	[[ -n ${KERNEL_CONFIGURE} ]] && return 0
 	options+=("no" "Do not change the kernel configuration")
@@ -56,35 +67,38 @@ function interactive_config_ask_kernel_configure() {
 	unset options
 }
 
-# Required usage:
-# declare -a arr_all_board_names=() arr_all_board_options=()                                                                                              # arrays
-# declare -A dict_all_board_types=() dict_all_board_source_files=() dict_all_board_descriptions=()                                                        # dictionaries
-# get_list_of_all_buildable_boards arr_all_board_names arr_all_board_options dict_all_board_types dict_all_board_source_files dict_all_board_descriptions # invoke
+# This function generates a list of all buildable boards.
+# It takes five arguments:
+# $1: An array to store the names of all boards.
+# $2: An array to store the options for all boards.
+# $3: A dictionary to store the types of all boards.
+# $4: A dictionary to store the source files of all boards.
+# $5: A dictionary to store the descriptions of all boards.
 function get_list_of_all_buildable_boards() {
 	display_alert "Generating list of all available boards" "might take a while" ""
 	local -a board_types=("conf")
-	[[ "${WIP_STATE}" != "supported" ]] && board_types+=("wip" "csc" "eos" "tvb")
+	[[ ${WIP_STATE} != "supported" ]] && board_types+=("wip" "csc" "eos" "tvb")
 	local -a board_file_paths=("${SRC}/config/boards" "${USERPATCHES_PATH}/config/boards")
 
 	# local -n is a name reference, see https://www.linuxjournal.com/content/whats-new-bash-parameter-expansion
 	# it works with arrays and associative arrays/dictionaries
 	local -n ref_arr_all_board_names="${1}"
-	[[ "${2}" != "" ]] && local -n ref_arr_all_board_options="${2}" # optional
+	[[ ${2} != "" ]] && local -n ref_arr_all_board_options="${2}" # optional
 	local -n ref_dict_all_board_types="${3}"
 	local -n ref_dict_all_board_source_files="${4}"
-	[[ "${5}" != "" ]] && local -n ref_dict_all_board_descriptions="${5}" # optional
+	[[ ${5} != "" ]] && local -n ref_dict_all_board_descriptions="${5}" # optional
 
 	declare -i prepare_options=0
-	if [[ "${2}" != "" || "${5}" != "" ]]; then # only if second or fifth reference specified, otherwise too costly
+	if [[ ${2} != "" || ${5} != "" ]]; then # only if second or fifth reference specified, otherwise too costly
 		prepare_options=1
 	fi
 
 	local board_file_path board_type full_board_file
 	for board_file_path in "${board_file_paths[@]}"; do
-		[[ ! -d "${board_file_path}" ]] && continue
+		[[ ! -d ${board_file_path} ]] && continue
 		for board_type in "${board_types[@]}"; do
 			for full_board_file in "${board_file_path}"/*."${board_type}"; do
-				[[ "${full_board_file}" == *"*"* ]] && continue # ignore non-matches, due to bash's (non-)globbing behaviour
+				[[ ${full_board_file} == *"*"* ]] && continue # ignore non-matches, due to bash's (non-)globbing behaviour
 				local board_name board_desc
 				board_name="$(basename "${full_board_file}" | cut -d'.' -f1)"
 				ref_dict_all_board_types["${board_name}"]="${board_type}"
@@ -115,12 +129,13 @@ function get_list_of_all_buildable_boards() {
 	return 0
 }
 
+# This function asks the user to select a board from a list during the interactive configuration.
 function interactive_config_ask_board_list() {
 	# if BOARD is not set, display selection menu, otherwise return success
 	[[ -n ${BOARD} ]] && return 0
 
 	declare WIP_STATE=supported
-	if [[ "${EXPERT}" == "yes" ]]; then
+	if [[ ${EXPERT} == "yes" ]]; then
 		display_alert "Expert mode!" "You can select all boards" "info"
 		WIP_STATE=unsupported
 	fi
@@ -248,7 +263,7 @@ function interactive_config_ask_desktop_build() {
 }
 
 function interactive_config_ask_standard_or_minimal() {
-	[[ "${BUILDING_IMAGE}" != "yes" ]] && return 0
+	[[ ${BUILDING_IMAGE} != "yes" ]] && return 0
 	[[ $BUILD_DESKTOP != no ]] && return 0
 	[[ -n $BUILD_MINIMAL ]] && return 0
 	options=()
