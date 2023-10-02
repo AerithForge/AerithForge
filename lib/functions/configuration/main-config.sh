@@ -1,16 +1,11 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
 
 ### Attention: we can't use any interactive programs, read from stdin, nor use non-coreutils utilities here.
 
-function do_main_configuration() {
-	display_alert "Starting main configuration" "${MOUNT_UUID}" "info"
+# FIXME-QA(Krey): This shouldn't be here, but shellcheck doesn't seem to see the initial declaration of this in `entrypoint.sh`
+set -e # Exit on false
+
+do_main_configuration() {
+	display_alert "Starting main configuration" "$MOUNT_UUID" "info"
 
 	# Obsolete stuff, make sure not defined, then make readonly
 	declare -g -r DEBOOTSTRAP_LIST
@@ -22,38 +17,41 @@ function do_main_configuration() {
 
 	# common options
 	declare revision_from="set in env or command-line parameter"
-	if [[ "${REVISION}" == "" ]]; then
-		if [ -f "${USERPATCHES_PATH}"/VERSION ]; then
-			REVISION=$(cat "${USERPATCHES_PATH}"/VERSION)
-			revision_from="userpatches VERSION file"
-		else
-			REVISION=$(cat "${SRC}"/VERSION)
+	if [ -z "$REVISION" ]; then
+		if [ ! -f "$USERPATCHES_PATH/VERSION" ]; then
+			REVISION="$(cat "$SRC/VERSION")"
 			revision_from="main VERSION file"
+		else
+			REVISION="$(cat "$USERPATCHES_PATH/VERSION")"
+			revision_from="userpatches VERSION file"
 		fi
 	fi
 
 	declare -g -r REVISION="${REVISION}"
-	display_alert "Using REVISION from" "${revision_from}: '${REVISION}'" "info"
-	if [[ ! "${REVISION}" =~ ^[0-9] ]]; then
-		exit_with_error "REVISION must begin with a digit, got '${REVISION}'"
+	display_alert "Using REVISION from" "$revision_from: '$REVISION'" "info"
+	if [[ ! "$REVISION" =~ ^[0-9] ]]; then
+		exit_with_error "REVISION must begin with a digit, got '$REVISION'"
 	fi
 
-	[[ -z $VENDOR ]] && VENDOR="Armbian"
-	[[ -z $VENDORURL ]] && VENDORURL="https://www.armbian.com"
-	[[ -z $VENDORSUPPORT ]] && VENDORSUPPORT="https://forum.armbian.com"
-	[[ -z $VENDORPRIVACY ]] && VENDORPRIVACY="https://www.armbian.com"
-	[[ -z $VENDORBUGS ]] && VENDORBUGS="https://www.armbian.com/bugs"
-	[[ -z $VENDORLOGO ]] && VENDORLOGO="armbian-logo"
-	[[ -z $ROOTPWD ]] && ROOTPWD="1234"                                  # Must be changed @first login
-	[[ -z $MAINTAINER ]] && MAINTAINER="Igor Pecovnik"                   # deb signature
-	[[ -z $MAINTAINERMAIL ]] && MAINTAINERMAIL="igor.pecovnik@****l.com" # deb signature
-	DEST_LANG="${DEST_LANG:-"en_US.UTF-8"}"                              # en_US.UTF-8 is default locale for target
-	display_alert "DEST_LANG..." "DEST_LANG: ${DEST_LANG}" "debug"
+	# FIXME(Krey): These need to be replaced with FRAMEWORK_ variables
+	[ -n "$VENDOR" ] || VENDOR="AerithForge"
+	[ -n "$VENDORURL" ] || VENDORURL="https://www.domain.tld"
+	[ -n "$VENDORSUPPORT" ] || VENDORSUPPORT="https://forum.domain.tld"
+	[ -n "$VENDORPRIVACY" ] || VENDORPRIVACY="https://www.domain.tld"
+	[ -n "$VENDORBUGS" ] || VENDORBUGS="https://www.domain.tld/bugs"
+	[ -n "$VENDORLOGO" ] || VENDORLOGO="aerithforge-logo"
+	[ -n "$ROOTPWD" ] || ROOTPWD="1234"                                  # Must be changed @first login
+	[ -n "$MAINTAINER" ] || MAINTAINER="Jacob Hrbek"                     # deb signature
+	[ -n "$MAINTAINERMAIL" ] || MAINTAINERMAIL="kreyren@****n.me" # deb signature
 
-	declare -g SKIP_EXTERNAL_TOOLCHAINS="${SKIP_EXTERNAL_TOOLCHAINS:-yes}" # don't use any external toolchains, by default.
+	DEST_LANG="${DEST_LANG:-"en_US.UTF-8"}" # en_US.UTF-8 is default locale for target
+	display_alert "DEST_LANG..." "DEST_LANG: $DEST_LANG" "debug"
+
+	# FIXME(Krey): This should be in entrypoint
+	[ -n "$SKIP_EXTERNAL_TOOLCHAINS" ] || SKIP_EXTERNAL_TOOLCHAINS="yes" # don't use any external toolchains, by default.
 
 	# Timezone
-	if [[ -f /etc/timezone ]]; then # Timezone for target is taken from host, if it exists.
+	if [ -f /etc/timezone ]; then # Timezone for target is taken from host, if it exists.
 		TZDATA=$(cat /etc/timezone)
 		display_alert "Using host's /etc/timezone for" "TZDATA: ${TZDATA}" "debug"
 	else
@@ -61,46 +59,55 @@ function do_main_configuration() {
 		TZDATA="Etc/UTC" # If not /etc/timezone at host, default to UTC.
 	fi
 
+	# FIXME(Krey): This should be in initiate.sh as FRAMEWORK_USE_ALL_CORES?
 	USEALLCORES=yes # Use all CPU cores for compiling
 
-	[[ -z $EXIT_PATCHING_ERROR ]] && EXIT_PATCHING_ERROR="" # exit patching if failed
-	[[ -z $HOST ]] && HOST="$BOARD"                         # set hostname to the board
-	cd "${SRC}" || exit
+	# FIXME(Krey): This should be in initiate as FRAMEWORK_EXIT_PATCHING_ERROR?
+	[ -n "$EXIT_PATCHING_ERROR" ] || EXIT_PATCHING_ERROR="" # exit patching if failed
 
-	[[ -z "${CHROOT_CACHE_VERSION}" ]] && CHROOT_CACHE_VERSION=7
+	[ -n "$HOST" ] || HOST="$BOARD" # set hostname to the board
 
-	if [[ -d "${SRC}/.git" && "${CONFIG_DEFS_ONLY}" != "yes" ]]; then # don't waste time if only gathering config defs
+	cd "$SRC"
+
+	# WTF(Krey)
+	[ -n "$CHROOT_CACHE_VERSION" ] || CHROOT_CACHE_VERSION=7
+
+	# don't waste time if only gathering config defs
+	if [[ -d "$SRC/.git" && "$CONFIG_DEFS_ONLY" != "yes" ]]; then
 		# The docker launcher will have passed these as environment variables. If not, try again here.
-		if [[ -z "${BUILD_REPOSITORY_URL}" || -z "${BUILD_REPOSITORY_COMMIT}" ]]; then
+		if [[ -z "$BUILD_REPOSITORY_URL" || -z "$BUILD_REPOSITORY_COMMIT" ]]; then
 			set_git_build_repo_url_and_commit_vars "main configuration"
 		fi
 	fi
 
+	# FIXME(Krey): Should be probably part of initiate as FRAMEWORK_ROOTFS_CACHE_MAX?
 	ROOTFS_CACHE_MAX=200 # max number of rootfs cache, older ones will be cleaned up
 
 	# .deb compression. xz is standard, but is slow, so if avoided by default if not running in CI. one day, zstd.
-	if [[ -z ${DEB_COMPRESS} ]]; then
-		DEB_COMPRESS="none"                          # none is very fast bug produces big artifacts.
-		[[ "${CI}" == "true" ]] && DEB_COMPRESS="xz" # xz is small and slow
+	if [ -z "$DEB_COMPRESS" ]; then
+		DEB_COMPRESS="none" # none is very fast bug produces big artifacts.
+		[ "$CI" != "true" ] || DEB_COMPRESS="xz" # xz is small and slow
 	fi
 	display_alert ".deb compression" "DEB_COMPRESS=${DEB_COMPRESS}" "debug"
 
 	declare -g -r PACKAGES_HASHED_STORAGE="${DEST}/packages-hashed"
-	if [[ $BETA == yes ]]; then
-		DEB_STORAGE=$DEST/debs-beta
+	if [ "$BETA" = yes ]; then
+		DEB_STORAGE="$DEST/debs-beta"
 	else
-		DEB_STORAGE=$DEST/debs
+		DEB_STORAGE="$DEST/debs"
 	fi
 
 	# image artefact destination with or without subfolder
-	FINALDEST="${DEST}/images"
-	if [[ -n "${MAKE_FOLDERS}" ]]; then
-		FINALDEST="${DEST}"/images/"${BOARD}"/"${MAKE_FOLDERS}"
-		install -d "${FINALDEST}"
+	FINALDEST="$DEST/images"
+	if [ -n "$MAKE_FOLDERS" ]; then
+		FINALDEST="$DEST/images/$BOARD/$MAKE_FOLDERS"
+		install -d "$FINALDEST"
 	fi
 
+	# FIXME-QA(Krey): The ROOTFS_TYPE should be probably set in initiate as FRAMEWORK_DEFAULT_ROOTFS_TYPE?
 	# Prepare rootfs filesystem support
-	[[ -z $ROOTFS_TYPE ]] && ROOTFS_TYPE=ext4 # default rootfs type is ext4
+	# default rootfs type is ext4
+	[ -n "$ROOTFS_TYPE" ] || ROOTFS_TYPE=ext4
 	case "$ROOTFS_TYPE" in
 		ext4) # nothing extra here
 			;;
@@ -111,56 +118,53 @@ function do_main_configuration() {
 			enable_extension "fs-f2fs-support"
 			# Fixed image size is in 1M dd blocks (MiB)
 			# to get size of block device /dev/sdX execute as root: echo $(( $(blockdev --getsize64 /dev/sdX) / 1024 / 1024 ))
-			[[ -z $FIXED_IMAGE_SIZE ]] && exit_with_error "Please define FIXED_IMAGE_SIZE for use with f2fs"
+			[ -n "$FIXED_IMAGE_SIZE" ] || exit_with_error "Please define FIXED_IMAGE_SIZE for use with f2fs"
 			;;
 		xfs)
 			enable_extension "fs-xfs-support"
 			;;
 		btrfs)
 			enable_extension "fs-btrfs-support"
-			[[ -z $BTRFS_COMPRESSION ]] && BTRFS_COMPRESSION=zlib # default btrfs filesystem compression method is zlib
+			[ -n "$BTRFS_COMPRESSION" ] || BTRFS_COMPRESSION=zlib # default btrfs filesystem compression method is zlib
 			[[ ! $BTRFS_COMPRESSION =~ zlib|lzo|zstd|none ]] && exit_with_error "Unknown btrfs compression method" "$BTRFS_COMPRESSION"
 			;;
 		nilfs2)
 			enable_extension "fs-nilfs2-support"
 			;;
 		*)
-			exit_with_error "Unknown rootfs type: ROOTFS_TYPE='${ROOTFS_TYPE}'"
+			exit_with_error "Unknown rootfs type: ROOTFS_TYPE='$ROOTFS_TYPE'"
 			;;
 	esac
 
 	# Support for LUKS / cryptroot
-	if [[ $CRYPTROOT_ENABLE == yes ]]; then
+	if [ "$CRYPTROOT_ENABLE" = yes ]; then
 		enable_extension "fs-cryptroot-support" # add the tooling needed, cryptsetup
-		ROOT_MAPPER="armbian-root"              # TODO: fixed name can't be used for parallel image building (rpardini: ?)
-		if [[ -z $CRYPTROOT_PASSPHRASE ]]; then # a passphrase is mandatory if rootfs encryption is enabled
+		ROOT_MAPPER="armbian-root" # TODO: fixed name can't be used for parallel image building (rpardini: ?)
+		if [ -z "$CRYPTROOT_PASSPHRASE" ]; then # a passphrase is mandatory if rootfs encryption is enabled
 			exit_with_error "Root encryption is enabled but CRYPTROOT_PASSPHRASE is not set"
 		fi
-		[[ -z $CRYPTROOT_SSH_UNLOCK ]] && CRYPTROOT_SSH_UNLOCK=yes
-		[[ -z $CRYPTROOT_SSH_UNLOCK_PORT ]] && CRYPTROOT_SSH_UNLOCK_PORT=2022
+		[ -n "$CRYPTROOT_SSH_UNLOCK" ] || CRYPTROOT_SSH_UNLOCK=yes
+		[ -n "$CRYPTROOT_SSH_UNLOCK_PORT" ] || CRYPTROOT_SSH_UNLOCK_PORT=2022
 		# Default to pdkdf2, this used to be the default with cryptroot <= 2.0, however
 		# cryptroot 2.1 changed that to Argon2i. Argon2i is a memory intensive
 		# algorithm which doesn't play well with SBCs (need 1GiB RAM by default !)
 		# https://gitlab.com/cryptsetup/cryptsetup/-/issues/372
-		[[ -z $CRYPTROOT_PARAMETERS ]] && CRYPTROOT_PARAMETERS="--pbkdf pbkdf2"
+		[ -n "$CRYPTROOT_PARAMETERS" ] || CRYPTROOT_PARAMETERS="--pbkdf pbkdf2"
 	fi
 
-	# Since we are having too many options for mirror management,
-	# then here is yet another mirror related option.
-	# Respecting user's override in case a mirror is unreachable.
+	# Since we are having too many options for mirror management, then here is yet another mirror related option. Respecting user's override in case a mirror is unreachable.
 	case $REGIONAL_MIRROR in
 		china)
-			[[ -z $USE_MAINLINE_GOOGLE_MIRROR ]] && [[ -z $MAINLINE_MIRROR ]] && MAINLINE_MIRROR=tuna
-			[[ -z $USE_GITHUB_UBOOT_MIRROR ]] && [[ -z $UBOOT_MIRROR ]] && UBOOT_MIRROR=gitee
-			[[ -z $GITHUB_MIRROR ]] && GITHUB_MIRROR=gitclone
-			[[ -z $DOWNLOAD_MIRROR ]] && DOWNLOAD_MIRROR=china
+			[ -z "$USE_MAINLINE_GOOGLE_MIRROR" ] && [ -z "$MAINLINE_MIRROR" ] && MAINLINE_MIRROR=tuna
+			[ -z "$USE_GITHUB_UBOOT_MIRROR" ] && [ -z "$UBOOT_MIRROR" ] && UBOOT_MIRROR=gitee
+			[ -z "$GITHUB_MIRROR" ] && GITHUB_MIRROR=gitclone
+			[ -z "$DOWNLOAD_MIRROR" ] && DOWNLOAD_MIRROR=china
 			;;
-		*) ;;
-
+		*) display_alert "Regional mirror '$REGIONAL_MIRROR' is unknown" warn
 	esac
 
 	# used by multiple sources - reduce code duplication
-	[[ $USE_MAINLINE_GOOGLE_MIRROR == yes ]] && MAINLINE_MIRROR=google
+	[ "$USE_MAINLINE_GOOGLE_MIRROR" != yes ] || MAINLINE_MIRROR=google
 
 	# URL for the git bundle used to "bootstrap" local git copies without too much server load. This applies independently of git mirror below.
 	declare -g MAINLINE_KERNEL_TORVALDS_BUNDLE_URL="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/clone.bundle" # this is plain torvalds, single branch
@@ -188,7 +192,7 @@ function do_main_configuration() {
 
 	MAINLINE_KERNEL_DIR='linux-mainline'
 
-	[[ $USE_GITHUB_UBOOT_MIRROR == yes ]] && UBOOT_MIRROR=github
+	[ "$USE_GITHUB_UBOOT_MIRROR" != yes ] || UBOOT_MIRROR=github
 
 	case $UBOOT_MIRROR in
 		gitee)
@@ -228,19 +232,30 @@ function do_main_configuration() {
 			;;
 	esac
 
+	# FIXME-QA(Krey): This is stupid
+	# * offsets should be set in board families, arch as well
+	# * ATF_COMPILE should be handled outside of this file
+	# * Wireguard wtf is that here?
+	# * Extrawifi.. tbd
+	# * SKIP_BOOTSPLASH and PLYMOUTH are board-only configuration
+	# * WTF is AUFS
+	# * IMAGE_PARTITION_TABLE is family/board configuration
+	# * EXTRA_BSP_NAME tbd
+	# * EXTRA_ROOTFS_MIB_SIZE tbd
+	# * CONSOLE_AUTOLOGIN should be board-only configuration or maybe something core
 	# Let's set default data if not defined in board configuration above
-	[[ -z $OFFSET ]] && OFFSET=4 # offset to 1st partition (we use 4MiB boundaries by default)
-	[[ -z $ARCH ]] && ARCH=armhf # makes little sense to default to anything...
-	ATF_COMPILE=yes
-	[[ -z $WIREGUARD ]] && WIREGUARD="yes"
-	[[ -z $EXTRAWIFI ]] && EXTRAWIFI="yes"
-	[[ -z $SKIP_BOOTSPLASH ]] && SKIP_BOOTSPLASH="no"
-	[[ -z $PLYMOUTH ]] && PLYMOUTH="yes"
-	[[ -z $AUFS ]] && AUFS="yes"
-	[[ -z $IMAGE_PARTITION_TABLE ]] && IMAGE_PARTITION_TABLE="msdos"
-	[[ -z $EXTRA_BSP_NAME ]] && EXTRA_BSP_NAME=""
-	[[ -z $EXTRA_ROOTFS_MIB_SIZE ]] && EXTRA_ROOTFS_MIB_SIZE=0
-	[[ -z $CONSOLE_AUTOLOGIN ]] && CONSOLE_AUTOLOGIN="yes"
+	[ -n "$OFFSET" ] || OFFSET=4 # offset to 1st partition (we use 4MiB boundaries by default)
+	[ -n "$ARCH" ] || ARCH=armhf # makes little sense to default to anything...
+	[ -n "$ATF_COMPILE" ] || ATF_COMPILE=no
+	[ -n "$WIREGUARD" ] || WIREGUARD="yes"
+	[ -n "$EXTRAWIFI" ] || EXTRAWIFI="yes"
+	[ -n "$SKIP_BOOTSPLASH" ] || SKIP_BOOTSPLASH="no"
+	[ -n "$PLYMOUTH" ] || PLYMOUTH="yes"
+	[ -n "$AUFS" ] || AUFS="yes"
+	[ -n "$IMAGE_PARTITION_TABLE" ] || IMAGE_PARTITION_TABLE="msdos"
+	[ -n "$EXTRA_BSP_NAME" ] || EXTRA_BSP_NAME=""
+	[ -n "$EXTRA_ROOTFS_MIB_SIZE" ] || EXTRA_ROOTFS_MIB_SIZE=0
+	[ -n "$CONSOLE_AUTOLOGIN" ] || CONSOLE_AUTOLOGIN="yes"
 
 	# single ext4 partition is the default and preferred configuration
 	#BOOTFS_TYPE=''
@@ -248,10 +263,10 @@ function do_main_configuration() {
 	## ------ Sourcing family config ---------------------------
 	source_family_config_and_arch
 
-	if [[ "$HAS_VIDEO_OUTPUT" == "no" ]]; then
+	if [ "$HAS_VIDEO_OUTPUT" = "no" ]; then
 		SKIP_BOOTSPLASH="yes"
 		PLYMOUTH="no"
-		[[ $BUILD_DESKTOP != "no" ]] && exit_with_error "HAS_VIDEO_OUTPUT is set to no. So we shouldn't build desktop environment"
+		[ "$BUILD_DESKTOP" = "no" ] || exit_with_error "HAS_VIDEO_OUTPUT is set to no. So we shouldn't build desktop environment"
 	fi
 
 	## Extensions: at this point we've sourced all the config files that will be used,
@@ -284,38 +299,49 @@ function do_main_configuration() {
 	display_alert "Done with do_main_configuration" "do_main_configuration" "debug"
 }
 
-function do_extra_configuration() {
-	[[ -n $ATFSOURCE && -z $ATF_USE_GCC ]] && exit_with_error "Error in configuration: ATF_USE_GCC is unset"
-	[[ -z $UBOOT_USE_GCC ]] && exit_with_error "Error in configuration: UBOOT_USE_GCC is unset"
-	[[ -z $KERNEL_USE_GCC ]] && exit_with_error "Error in configuration: KERNEL_USE_GCC is unset"
+do_extra_configuration() {
+	[[ -n "$ATFSOURCE" && -z "$ATF_USE_GCC" ]] && exit_with_error "Error in configuration: ATF_USE_GCC is unset"
+	[ -n "$UBOOT_USE_GCC" ] || exit_with_error "Error in configuration: UBOOT_USE_GCC is unset"
+	[ -n "$KERNEL_USE_GCC" ] || exit_with_error "Error in configuration: KERNEL_USE_GCC is unset"
 
 	declare BOOTCONFIG_VAR_NAME="BOOTCONFIG_${BRANCH^^}"
-	[[ -n ${!BOOTCONFIG_VAR_NAME} ]] && BOOTCONFIG=${!BOOTCONFIG_VAR_NAME}
-	[[ -z $LINUXCONFIG ]] && LINUXCONFIG="linux-${LINUXFAMILY}-${BRANCH}"
-	[[ -z $BOOTPATCHDIR ]] && BOOTPATCHDIR="u-boot-$LINUXFAMILY"
-	[[ -z $ATFPATCHDIR ]] && ATFPATCHDIR="atf-$LINUXFAMILY"
-	[[ -z $KERNELPATCHDIR ]] && KERNELPATCHDIR="$LINUXFAMILY-$BRANCH"
+	[ -z "${!BOOTCONFIG_VAR_NAME}" ] || BOOTCONFIG="${!BOOTCONFIG_VAR_NAME}"
+	[ -n "$LINUXCONFIG" ] || LINUXCONFIG="linux-$LINUXFAMILY-$BRANCH"
+	[ -n "$BOOTPATCHDIR" ] || BOOTPATCHDIR="u-boot-$LINUXFAMILY"
+	[ -n "$ATFPATCHDIR" ] || ATFPATCHDIR="atf-$LINUXFAMILY"
+	[ -n "$KERNELPATCHDIR" ] || KERNELPATCHDIR="$LINUXFAMILY-$BRANCH"
 
-	if [[ "$RELEASE" =~ ^(focal|jammy|kinetic|lunar)$ ]]; then
-		DISTRIBUTION="Ubuntu"
-	else
-		DISTRIBUTION="Debian"
-	fi
+	# FIXME-QA(Krey): This should be handled differently we likely need a `DISTRO` declaration to manage `jessie` conflict and for non-apt distributions
+	# Decide the release
+	case "$RELEASE" in
+		focal|jammy|kinetic|lunar) DISTRIBUTION="Ubuntu" ;;
+		jessie) exit_with_error "The codename 'jessie' is conflicting with Debian and Devuan releases, the situation is not yet handled, fixme?" ;;
+		hamm|slink|potato|woody|sarge|etch|lenny|squeeze|wheezy|jessie|stretch|buster|bullseye|bookworm|sid) DISTRIBUTION="Debian" ;;
+		jessie|ascii|beowulf|chimaera|daedalus|excalibur|ceres) DISTRIBUTION="Devuan" ;;
+		arianrhod|robur|dwyn|awen|taranis|slaine|dagda|brigantia|toutatis|belenos|elidas|etiona|nabia|aramo|flidas) DISTRIBUTION="Trisquel" ;;
+		*) exit_with_error "Release '$RELEASE' is not implemented"
+	esac
 
 	DEBIAN_MIRROR='deb.debian.org/debian'
 	DEBIAN_SECURTY='security.debian.org/'
-	[[ "${ARCH}" == "amd64" ]] &&
-		UBUNTU_MIRROR='archive.ubuntu.com/ubuntu/' ||
-		UBUNTU_MIRROR='ports.ubuntu.com/'
 
-	if [[ $DOWNLOAD_MIRROR == "china" ]]; then
+	# FIXME-QA(Krey): This check shouldn't be triggered on non-ubuntu releases
+	case "$ARCH" in
+		"amd64") UBUNTU_MIRROR='archive.ubuntu.com/ubuntu/' ;;
+		*) UBUNTU_MIRROR='ports.ubuntu.com/'
+	esac
+
+	if [ "$DOWNLOAD_MIRROR" = "china" ]; then
 		DEBIAN_MIRROR='mirrors.tuna.tsinghua.edu.cn/debian'
 		DEBIAN_SECURTY='mirrors.tuna.tsinghua.edu.cn/debian-security'
-		[[ "${ARCH}" == "amd64" ]] &&
+
+		# FIXME-QA(Krey): This check shouldn't be triggered on non-ubuntu releases
+		[ "$ARCH" = "amd64" ] &&
 			UBUNTU_MIRROR='mirrors.tuna.tsinghua.edu.cn/ubuntu/' ||
 			UBUNTU_MIRROR='mirrors.tuna.tsinghua.edu.cn/ubuntu-ports/'
 	fi
 
+	# REFACTOR(Krey)
 	if [[ $DOWNLOAD_MIRROR == "bfsu" ]]; then
 		DEBIAN_MIRROR='mirrors.bfsu.edu.cn/debian'
 		DEBIAN_SECURTY='mirrors.bfsu.edu.cn/debian-security'
@@ -324,6 +350,7 @@ function do_extra_configuration() {
 			UBUNTU_MIRROR='mirrors.bfsu.edu.cn/ubuntu-ports/'
 	fi
 
+	# REFACTOR(Krey)
 	if [[ "${ARCH}" == "amd64" ]]; then
 		UBUNTU_MIRROR='archive.ubuntu.com/ubuntu' # ports are only for non-amd64, of course.
 		if [[ -n ${CUSTOM_UBUNTU_MIRROR} ]]; then # ubuntu redirector doesn't work well on amd64
@@ -331,6 +358,7 @@ function do_extra_configuration() {
 		fi
 	fi
 
+	# REFACTOR(Krey)
 	if [[ "${ARCH}" != "i386" && "${ARCH}" != "amd64" ]]; then # ports are not present on all mirrors
 		if [[ -n ${CUSTOM_UBUNTU_MIRROR_PORTS} ]]; then
 			display_alert "Using custom ports/${ARCH} mirror" "${CUSTOM_UBUNTU_MIRROR_PORTS}" "info"
@@ -338,16 +366,19 @@ function do_extra_configuration() {
 		fi
 	fi
 
+
+	# FIXME-QA(Krey): This should probabyl be in a different file
 	# Control aria2c's usage of ipv6.
-	[[ -z $DISABLE_IPV6 ]] && DISABLE_IPV6="true"
+	[ -n "$DISABLE_IPV6" ] || DISABLE_IPV6="true"
 
 	# @TODO this is _very legacy_ and should be removed. Old-time users might have a lib.config lying around and it will mess up things.
 	# For (late) user override.
 	# Notice: it is too late to define hook functions or add extensions in lib.config, since the extension initialization already ran by now.
 	#         in case the user tries to use them in lib.config, hopefully they'll be detected as "wishful hooking" and the user will be wrn'ed.
-	if [[ -f $USERPATCHES_PATH/lib.config ]]; then
+	if [ -f "$USERPATCHES_PATH/lib.config" ]; then
 		display_alert "Using user configuration override" "$USERPATCHES_PATH/lib.config" "info"
-		source "$USERPATCHES_PATH"/lib.config
+		# shellcheck source="../../../userpatches/lib.config" disable=SC1091 # The file doesn't have to exist
+		. "$USERPATCHES_PATH/lib.config"
 	fi
 
 	# Prepare array for extensions to fill in.
@@ -370,18 +401,20 @@ function do_extra_configuration() {
 
 	error_if_lib_tag_set # make sure users are not thrown off by using old parameter which does nothing anymore
 
+	# FIXME-QA(Krey): It's stupid because it's declaring one variable and then overwriting it..
 	# apt-cacher-ng mirror configurarion
-	APT_MIRROR=$DEBIAN_MIRROR
-	if [[ $DISTRIBUTION == Ubuntu ]]; then
-		APT_MIRROR=$UBUNTU_MIRROR
+	APT_MIRROR="$DEBIAN_MIRROR"
+	if [ "$DISTRIBUTION" = Ubuntu ]; then
+		APT_MIRROR="$UBUNTU_MIRROR"
 	fi
 
-	[[ -n "${APT_PROXY_ADDR}" ]] && display_alert "Using custom apt proxy address" "APT_PROXY_ADDR=${APT_PROXY_ADDR}" "info"
+	[ -z "$APT_PROXY_ADDR" ] || display_alert "Using custom apt proxy address" "APT_PROXY_ADDR=$APT_PROXY_ADDR" "info"
 
 	# @TODO: allow to run aggregation, for CONFIG_DEFS_ONLY? rootfs_aggregate_packages
 
+	# FIXME(Krey): See if there is a better option than cloudflare
 	# Give the option to configure DNS server used in the chroot during the build process
-	[[ -z $NAMESERVER ]] && NAMESERVER="1.0.0.1" # default is cloudflare alternate
+	[ -n "$NAMESERVER" ] || NAMESERVER="1.0.0.1" # default is cloudflare alternate
 
 	# Consolidate the extra image suffix. loop and add.
 	declare EXTRA_IMAGE_SUFFIX=""
@@ -397,26 +430,26 @@ function do_extra_configuration() {
 	# Here we do a gross estimate with the KERNEL_MAJOR_MINOR + ".y" version, or "generic" if not set (ddks etc).
 	declare calculated_image_version="undetermined"
 	declare predicted_kernel_version="generic"
-	if [[ -n "${KERNEL_MAJOR_MINOR}" ]]; then
-		predicted_kernel_version="${KERNEL_MAJOR_MINOR}.y"
+	if [ -n "$KERNEL_MAJOR_MINOR" ]; then
+		predicted_kernel_version="$KERNEL_MAJOR_MINOR.y"
 	fi
-	IMAGE_INSTALLED_KERNEL_VERSION="${predicted_kernel_version}" include_vendor_version="no" calculate_image_version
+	IMAGE_INSTALLED_KERNEL_VERSION="$predicted_kernel_version" include_vendor_version="no" calculate_image_version
 
 	declare -r -g IMAGE_FILE_ID="${calculated_image_version}" # Global, readonly.
 
 	display_alert "Done with do_extra_configuration" "do_extra_configuration" "debug"
 }
 
-function write_config_summary_output_file() {
+write_config_summary_output_file() {
 	local debug_dpkg_arch debug_uname debug_virt debug_src_mount
 	debug_dpkg_arch="$(dpkg --print-architecture)"
 	debug_uname="$(uname -a)"
 	# We might not have systemd-detect-virt, specially inside docker. Docker images have no systemd...
 	debug_virt="unknown-nosystemd"
-	if [[ -n "$(command -v systemd-detect-virt)" ]]; then
+	if [ -n "$(command -v systemd-detect-virt)" ]; then
 		debug_virt="$(systemd-detect-virt || true)"
 	fi
-	debug_src_mount="$(findmnt --output TARGET,SOURCE,FSTYPE,AVAIL --target "${SRC}" --uniq)"
+	debug_src_mount="$(findmnt --output TARGET,SOURCE,FSTYPE,AVAIL --target "$SRC" --uniq)"
 
 	display_alert "Writing build config summary to" "debug log" "debug"
 	LOG_ASSET="build.summary.txt" do_with_log_asset cat <<- EOF
@@ -462,48 +495,49 @@ function write_config_summary_output_file() {
 	EOF
 }
 
-function source_family_config_and_arch() {
-	declare -a family_source_paths=("${SRC}/config/sources/families/${LINUXFAMILY}.conf" "${USERPATCHES_PATH}/config/sources/families/${LINUXFAMILY}.conf")
+source_family_config_and_arch() {
+	declare -a family_source_paths=("$SRC/config/sources/families/$LINUXFAMILY.conf" "$USERPATCHES_PATH/config/sources/families/$LINUXFAMILY.conf")
 	declare -i family_sourced_ok=0
 	declare family_source_path
 	for family_source_path in "${family_source_paths[@]}"; do
-		[[ ! -f "${family_source_path}" ]] && continue
+		[ -f "$family_source_path" ] || continue
 
 		display_alert "Sourcing family configuration" "${family_source_path}" "info"
+		# FIXME-LINT(Krey): Avoid using /dev/null here
 		# shellcheck source=/dev/null
-		source "${family_source_path}"
+		. "$family_source_path"
 
 		# @TODO: reset error handling, go figure what they do in there.
 
-		family_sourced_ok=$((family_sourced_ok + 1))
+		family_sourced_ok="$((family_sourced_ok + 1))"
 	done
 
 	# If no families sourced (and not allowed by ext var), bail out
-	if [[ ${family_sourced_ok} -lt 1 ]]; then
-		if [[ "${allow_no_family:-"no"}" != "yes" ]]; then
+	if [ "$family_sourced_ok" -lt 1 ]; then
+		if [ "${allow_no_family:-"no"}" != "yes" ]; then
 			exit_with_error "Sources configuration not found" "tried ${family_source_paths[*]}"
 		fi
 	fi
 
 	# load "all-around common arch defaults" common.conf
 	display_alert "Sourcing common arch configuration" "common.conf" "debug"
-	# shellcheck source=config/sources/common.conf
-	source "${SRC}/config/sources/common.conf"
+	# shellcheck source=../../../config/sources/common.conf
+	. "$SRC/config/sources/common.conf"
 
 	# load architecture defaults
 	display_alert "Sourcing arch configuration" "${ARCH}.conf" "info"
-	# shellcheck source=/dev/null
-	source "${SRC}/config/sources/${ARCH}.conf"
+	# FIXME-LINT(Krey): Do not use /dev/null, this needs better logic declaration
+	. "$SRC/config/sources/$ARCH.conf"
 
 	return 0
 }
 
-function set_git_build_repo_url_and_commit_vars() {
-	display_alert "Getting git info for repo, during ${1}..." "${SRC}" "debug"
+set_git_build_repo_url_and_commit_vars() {
+	display_alert "Getting git info for repo, during $1..." "$SRC" "debug"
 	declare -g BUILD_REPOSITORY_URL BUILD_REPOSITORY_COMMIT
-	BUILD_REPOSITORY_URL="$(git -C "${SRC}" remote get-url "$(git -C "${SRC}" remote | grep origin || true)" || true)" # ignore all errors
-	BUILD_REPOSITORY_COMMIT="$(git -C "${SRC}" describe --match=d_e_a_d_b_e_e_f --always --dirty || true)"             # ignore error
-	display_alert "BUILD_REPOSITORY_URL set during ${1}" "${BUILD_REPOSITORY_URL}" "debug"
-	display_alert "BUILD_REPOSITORY_COMMIT set during ${1}" "${BUILD_REPOSITORY_COMMIT}" "debug"
+	BUILD_REPOSITORY_URL="$(git -C "$SRC" remote get-url "$(git -C "$SRC" remote | grep origin || true)" || true)" # ignore all errors
+	BUILD_REPOSITORY_COMMIT="$(git -C "$SRC" describe --match=d_e_a_d_b_e_e_f --always --dirty || true)"             # ignore error
+	display_alert "BUILD_REPOSITORY_URL set during $1" "$BUILD_REPOSITORY_URL" "debug"
+	display_alert "BUILD_REPOSITORY_COMMIT set during $1" "$BUILD_REPOSITORY_COMMIT" "debug"
 	return 0
 }

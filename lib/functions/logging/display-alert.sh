@@ -1,13 +1,4 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
-
-function display_alert() {
+display_alert() {
 	# If asked, avoid any fancy ANSI escapes completely. For python-driven log collection. Formatting could be improved.
 	# If used, also does not write to logfile even if it exists.
 	if [[ "${ANSI_COLOR}" == "none" ]]; then
@@ -206,7 +197,7 @@ function display_alert() {
 	return 0 # make sure to exit with success, always
 }
 
-function logging_echo_prefix_for_pv() {
+logging_echo_prefix_for_pv() {
 	local what="$1"
 	local indicator="🤓" # you guess who this is
 	case $what in
@@ -252,7 +243,7 @@ function logging_echo_prefix_for_pv() {
 
 # this is slow, unsafe, incorrect, but does help a lot to find slow spots.
 # this sets the outer scope variable "extra_profiler"
-function poor_man_profiler() {
+poor_man_profiler() {
 	# replace commas with dots in EPOCHREALTIME
 	declare seconds_dot_micros="${EPOCHREALTIME//,/.}"
 	# Parse seconds and nanos from seconds_dot_micros, separated by "dot"

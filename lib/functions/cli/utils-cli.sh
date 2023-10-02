@@ -1,19 +1,8 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
-
-#!/usr/bin/env bash
-
 # This is called like this:
 #	declare -A -g ARMBIAN_PARSED_CMDLINE_PARAMS=()
 #	declare -a -g ARMBIAN_NON_PARAM_ARGS=()
-#	parse_cmdline_params "${@}" # which fills the vars above, being global.
-function parse_cmdline_params() {
+#	parse_cmdline_params "$@" # which fills the vars above, being global.
+parse_cmdline_params() {
 	declare -A -g ARMBIAN_PARSED_CMDLINE_PARAMS=()
 	declare -a -g ARMBIAN_NON_PARAM_ARGS=()
 
@@ -45,7 +34,7 @@ function parse_cmdline_params() {
 # This can be called early on, or later after having sourced the config. Show what is happening.
 # This is called:
 # apply_cmdline_params_to_env "reason" # reads from global ARMBIAN_PARSED_CMDLINE_PARAMS
-function apply_cmdline_params_to_env() {
+apply_cmdline_params_to_env() {
 	declare -A -g ARMBIAN_PARSED_CMDLINE_PARAMS # Hopefully this has values
 	declare __my_reason="${1}"
 	shift
@@ -73,7 +62,7 @@ function apply_cmdline_params_to_env() {
 	done
 }
 
-function armbian_prepare_cli_command_to_run() {
+armbian_prepare_cli_command_to_run() {
 	local command_id="${1}"
 	display_alert "Preparing to run command" "${command_id}" "debug"
 	ARMBIAN_COMMAND="${command_id}"
@@ -94,12 +83,14 @@ function armbian_prepare_cli_command_to_run() {
 	local pre_run_function_name="cli_${ARMBIAN_COMMAND_HANDLER}_pre_run"
 	local run_function_name="cli_${ARMBIAN_COMMAND_HANDLER}_run"
 
+	# FIXME-QA(Krey): This seems like a really stupid solution
 	# Reset the functions.
-	function armbian_cli_pre_run_command() {
-		display_alert "No pre-run function for command" "${ARMBIAN_COMMAND}" "warn"
+	armbian_cli_pre_run_command() {
+		display_alert "No pre-run function for command" "$ARMBIAN_COMMAND" warn
 	}
-	function armbian_cli_run_command() {
-		display_alert "No run function for command" "${ARMBIAN_COMMAND}" "warn"
+
+	armbian_cli_run_command() {
+		display_alert "No run function for command" "$ARMBIAN_COMMAND" warn
 	}
 
 	# Materialize functions to call that specific command.
@@ -121,7 +112,7 @@ function armbian_prepare_cli_command_to_run() {
 		eval "$(
 			cat <<- EOF
 				display_alert "Setting up run function for command" "${ARMBIAN_COMMAND}: ${run_function_name}" "debug"
-				function armbian_cli_run_command() {
+				armbian_cli_run_command() {
 					# Set the variables defined in ARMBIAN_COMMAND_VARS
 					${set_vars_for_command}
 					display_alert "Calling run function for command" "${ARMBIAN_COMMAND}: ${run_function_name}" "debug"
@@ -132,8 +123,10 @@ function armbian_prepare_cli_command_to_run() {
 	fi
 }
 
-function parse_each_cmdline_arg_as_command_param_or_config() {
-	local is_command="no" is_config="no" command_handler conf_path conf_sh_path config_file=""
+parse_each_cmdline_arg_as_command_param_or_config() {
+	local is_command="no"
+	local is_config="no"
+	local command_handler conf_path conf_sh_path config_file=""
 	local argument="${1}"
 
 	# lookup if it is a command.
@@ -183,7 +176,7 @@ function parse_each_cmdline_arg_as_command_param_or_config() {
 # Produce relaunch parameters. Add the running configs, arguments, and command.
 # Declare and use ARMBIAN_CLI_FINAL_RELAUNCH_ARGS as "${ARMBIAN_CLI_FINAL_RELAUNCH_ARGS[@]}"
 # Also ARMBIAN_CLI_FINAL_RELAUNCH_ENVS as "${ARMBIAN_CLI_FINAL_RELAUNCH_ENVS[@]}"
-function produce_relaunch_parameters() {
+produce_relaunch_parameters() {
 	declare -g -a ARMBIAN_CLI_FINAL_RELAUNCH_ARGS=()
 	declare -g -a ARMBIAN_CLI_FINAL_RELAUNCH_ENVS=()
 
@@ -221,7 +214,7 @@ function produce_relaunch_parameters() {
 	display_alert "Produced relaunch envs:" "ARMBIAN_CLI_FINAL_RELAUNCH_ENVS: ${ARMBIAN_CLI_FINAL_RELAUNCH_ENVS[*]}" "debug"
 }
 
-function cli_standard_relaunch_docker_or_sudo() {
+cli_standard_relaunch_docker_or_sudo() {
 	display_alert "Gonna relaunch" "EUID: ${EUID} -- PREFER_DOCKER:${PREFER_DOCKER}" "debug"
 	if [[ "${EUID}" == "0" ]]; then # we're already root. Either running as real root, or already sudo'ed.
 		if [[ "${ARMBIAN_RELAUNCHED}" != "yes" && "${ALLOW_ROOT}" != "yes" ]]; then

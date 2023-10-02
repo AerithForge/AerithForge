@@ -1,13 +1,4 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
-
-function cli_docker_pre_run() {
+cli_docker_pre_run() {
 	if [[ "${DOCKERFILE_GENERATE_ONLY}" == "yes" ]]; then
 		display_alert "Dockerfile generation only" "func cli_docker_pre_run" "debug"
 		return 0
@@ -29,7 +20,7 @@ function cli_docker_pre_run() {
 	fi
 }
 
-function cli_docker_run() {
+cli_docker_run() {
 	# Docker won't have ${SRC}/.git, so precalculate the git-info header so it can be included in the inside-Docker logs.
 	# It's gonna be picked up by export_ansi_logs() and included in the final log, if it exists.
 	declare -g GIT_INFO_ANSI

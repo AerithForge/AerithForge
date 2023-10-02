@@ -1,0 +1,28 @@
+external-sources=true # Allow the use of external sources for the `source` directive's scope
+
+shell=sh # Prefer POSIX syntax with exceptions
+
+disable=SC3043 # `local` is allowed
+disable=SC3028 # `RANDOM` is allowed
+disable=SC3053 # Indirect expansion e.g. `${!BOOTCONFIG_VAR_NAME}` is allowed
+disable=SC3060 # String replacements e.g. ${ref//lib\//}" are allowed
+
+# Optional checks
+
+# name:    avoid-nullary-conditions
+# Suggest explicitly using -n in `[ $var ]`
+# example: [ "$var" ]
+# fix:     [ -n "$var" ]
+enable=avoid-nullary-conditions
+
+# name:    check-set-e-suppressed
+# desc:    Notify when set -e is suppressed during function invocation
+# example: set -e; func() { cp *.txt ~/backup; rm *.txt; }; func && echo ok
+# fix:     set -e; func() { cp *.txt ~/backup; rm *.txt; }; func; echo ok
+enable=check-set-e-suppressed
+
+# name:    quote-safe-variables
+# desc:    Suggest quoting variables without metacharacters
+# example: var=hello; echo $var
+# fix:     var=hello; echo "$var"
+enable=quote-safe-variables

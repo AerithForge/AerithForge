@@ -1,13 +1,4 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
-
-function armbian_register_commands() {
+armbian_register_commands() {
 	# More than one command can map to the same handler. In that case, use ARMBIAN_COMMANDS_TO_VARS_DICT for specific vars.
 	declare -g -A ARMBIAN_COMMANDS_TO_HANDLERS_DICT=(
 		["docker"]="docker" # thus requires cli_docker_pre_run and cli_docker_run

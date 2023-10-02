@@ -1,16 +1,11 @@
-#!/usr/bin/env bash
-#
-# SPDX-License-Identifier: GPL-2.0
-#
-# Copyright (c) 2013-2023 Igor Pecovnik, igor@armbian.com
-#
-# This file is a part of the Armbian Build Framework
-# https://github.com/armbian/build/
+# shellcheck shell=bash
+
+# FIXME-REFACTOR(Krey): Decide what to do with this, it doesn't look too shit
 
 # Initialize and prepare the trap managers, one for each of ERR, INT, TERM and EXIT traps.
 # Bash goes insane regarding line numbers and other stuff if we try to overwrite the traps.
 # This also implements the custom "cleanup" handlers, which always run at the end of build, or when exiting prematurely for any reason.
-function traps_init() {
+traps_init() {
 	# shellcheck disable=SC2034 # Array of cleanup handlers.
 	declare -g -a trap_manager_cleanup_handlers=()
 	# shellcheck disable=SC2034 # Global to avoid doubly reporting ERR/EXIT pairs.
@@ -34,7 +29,7 @@ function traps_init() {
 # - show stack, if not previously shown (trap_manager_error_handled==0), and if trap_exit_code > 0
 # - allow for debug shell, if trap_exit_code > 0
 # - call all the cleanup functions (always)
-function main_trap_handler() {
+main_trap_handler() {
 	local trap_type="${1}"
 	local trap_exit_code="${2}"
 	local stack_caller short_stack
@@ -102,7 +97,7 @@ function main_trap_handler() {
 }
 
 # Run the cleanup handlers, if any, and clean the cleanup list.
-function run_cleanup_handlers() {
+run_cleanup_handlers() {
 	display_alert "run_cleanup_handlers! list:" "${trap_manager_cleanup_handlers[*]}" "cleanup"
 	if [[ ${#trap_manager_cleanup_handlers[@]} -lt 1 ]]; then
 		return 0 # No handlers set, just return.
@@ -125,7 +120,7 @@ function run_cleanup_handlers() {
 }
 
 # Adds a callback for trap types; first and only argument is eval code to call during cleanup. If such, that needs proper quoting (@Q)
-function add_cleanup_handler() {
+add_cleanup_handler() {
 	if [[ $# -gt 1 ]]; then
 		exit_with_error "add_cleanup_handler: too many params"
 	fi
@@ -140,7 +135,7 @@ function add_cleanup_handler() {
 	trap_manager_cleanup_handlers=("${callback}" "${trap_manager_cleanup_handlers[@]}")
 }
 
-function execute_and_remove_cleanup_handler() {
+execute_and_remove_cleanup_handler() {
 	local callback="$1"
 	display_alert "Execute and remove cleanup handler" "${callback}" "cleanup"
 	local remaining_cleanups=()
@@ -154,7 +149,7 @@ function execute_and_remove_cleanup_handler() {
 	trap_manager_cleanup_handlers=("${remaining_cleanups[@]}")
 }
 
-function run_one_cleanup_handler() {
+run_one_cleanup_handler() {
 	declare one_cleanup_handler="$1"
 	display_alert "Running cleanup handler" "${one_cleanup_handler}" "cleanup"
 
@@ -163,14 +158,14 @@ function run_one_cleanup_handler() {
 	}
 }
 
-function remove_all_trap_handlers() {
+remove_all_trap_handlers() {
 	# @TODO find usages and kill
 	display_alert "calling obsolete method remove_all_trap_handlers()" "not doing anything" "warning"
 }
 
 # exit_with_error <message> <highlight>
 # a way to terminate build process with verbose error message
-function exit_with_error() {
+exit_with_error() {
 	# Log the error and exit.
 	# Everything else will be done by shared trap handling, above.
 	local _file="${BASH_SOURCE[1]}"
@@ -197,7 +192,7 @@ function exit_with_error() {
 
 # terminate build with a specific error code (44), meaning "target not supported".
 # this is exactly like exit_with_error, but will be handled differently by the build pipeline.
-function exit_with_target_not_supported_error() {
+exit_with_target_not_supported_error() {
 	# Log the error and exit.
 	# Everything else will be done by shared trap handling, above.
 	local _file="${BASH_SOURCE[1]}"
